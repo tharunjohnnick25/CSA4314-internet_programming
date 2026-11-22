@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoRoute — Solid Waste Management &amp; Route Analytics</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a}</style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 font-bold text-lg text-slate-900">
+        <i data-lucide="recycle" class="w-5 h-5 text-emerald-600"></i>
+        <span>EcoRoute Waste</span>
+      </div>
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <button type="button" data-role="admin" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 text-white">Administrator</button>
+        <button type="button" data-role="public" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">General Public</button>
+        <button type="button" data-role="driver" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">Driver</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- ADMIN -->
+    <section id="view-admin" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4"><p class="text-xs text-slate-500">Total Bins</p><p id="k-bins" class="text-2xl font-bold mt-1">0</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4"><p class="text-xs text-slate-500">Critical (&gt;80%)</p><p id="k-crit" class="text-2xl font-bold text-rose-600 mt-1">0</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4"><p class="text-xs text-slate-500">Active Drivers</p><p id="k-drv" class="text-2xl font-bold text-emerald-600 mt-1">0</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4"><p class="text-xs text-slate-500">Public Complaints</p><p id="k-cmp" class="text-2xl font-bold text-amber-600 mt-1">0</p></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          <h2 class="text-base font-bold">Create / Update Garbage Bin</h2>
+          <form id="bin-form" class="space-y-2.5">
+            <input id="b-id" type="hidden" />
+            <input id="b-loc" type="text" required placeholder="Bin Location (e.g. Anna Nagar Sector 4)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <select id="b-type" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <option>Biodegradable (Green)</option><option>Recyclable (Blue)</option><option>Hazardous (Red)</option>
+            </select>
+            <input id="b-fill" type="number" min="0" max="100" required value="50" placeholder="Fill Level (%)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <select id="b-driver" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"></select>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-700 text-white text-xs font-semibold">Save Garbage Bin</button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          <h2 class="text-base font-bold">Garbage Bins &amp; Assigned Routes</h2>
+          <div id="admin-bins-list" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+          <h2 class="text-base font-bold mb-3">Waste Segregation &amp; Load Report</h2>
+          <div class="relative h-64"><canvas id="waste-chart"></canvas></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          <h2 class="text-base font-bold">Public Complaints &amp; Driver Management</h2>
+          <div id="admin-cmp-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GENERAL PUBLIC -->
+    <section id="view-public" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h2 class="text-base font-bold">Register Waste Complaint</h2>
+        <form id="pub-cmp-form" class="space-y-3">
+          <input id="pc-name" type="text" required placeholder="Your Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+          <input id="pc-area" type="text" required placeholder="Street / Area" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+          <textarea id="pc-desc" rows="3" required placeholder="Describe overflowing bin or missed pickup..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-700 text-white text-xs font-semibold">Submit Complaint</button>
+        </form>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h2 class="text-base font-bold">My Complaints &amp; Status</h2>
+        <div id="pub-cmp-list" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- DRIVER -->
+    <section id="view-driver" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h2 class="text-base font-bold">Driver Daily Work Updates &amp; Optimal Route</h2>
+            <p class="text-xs text-slate-500">Prioritized route sorted by highest bin fill level toward the Municipal Dumping Site.</p>
+          </div>
+          <select id="drv-select" class="px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white"></select>
+        </div>
+        <div id="drv-route-list" class="space-y-2.5"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-box" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+  <script>
+    let state = {
+      role: 'admin',
+      drivers: ['Ravi Kumar (Truck TN-01)', 'Suresh Babu (Truck TN-04)'],
+      bins: [
+        { id: 'BIN-101', loc: 'T. Nagar Bus Stand', type: 'Biodegradable (Green)', fill: 88, driver: 'Ravi Kumar (Truck TN-01)' },
+        { id: 'BIN-102', loc: 'Adyar Signal', type: 'Recyclable (Blue)', fill: 65, driver: 'Ravi Kumar (Truck TN-01)' },
+        { id: 'BIN-103', loc: 'Guindy Industrial Estate', type: 'Hazardous (Red)', fill: 92, driver: 'Suresh Babu (Truck TN-04)' }
+      ],
+      complaints: [
+        { id: 'WC-1', name: 'Meenakshi S.', area: 'T. Nagar', desc: 'Green bin overflowing near market gate.', status: 'Assigned' }
+      ]
+    };
+
+    try { const s = localStorage.getItem('ecoroute_v1'); if (s) state = { ...state, ...JSON.parse(s) }; } catch (e) {}
+    function save() { try { localStorage.setItem('ecoroute_v1', JSON.stringify(state)); } catch (e) {} }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg';
+      el.textContent = msg;
+      document.getElementById('toast-box').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    let chart = null;
+    function render() {
+      ['admin', 'public', 'driver'].forEach(r => document.getElementById(`view-${r}`).classList.toggle('hidden', state.role !== r));
+      document.querySelectorAll('.role-btn').forEach(b => {
+        b.className = b.dataset.role === state.role ? 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 text-white' : 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600';
+      });
+
+      document.getElementById('k-bins').textContent = state.bins.length;
+      document.getElementById('k-crit').textContent = state.bins.filter(b => b.fill >= 80).length;
+      document.getElementById('k-drv').textContent = state.drivers.length;
+      document.getElementById('k-cmp').textContent = state.complaints.length;
+
+      const drvOpts = state.drivers.map(d => `<option>${esc(d)}</option>`).join('');
+      document.getElementById('b-driver').innerHTML = drvOpts;
+      if (!document.getElementById('drv-select').innerHTML) document.getElementById('drv-select').innerHTML = drvOpts;
+
+      document.getElementById('admin-bins-list').innerHTML = state.bins.map(b => `
+        <div class="p-3 rounded-xl border border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+          <div>
+            <p class="font-bold">${esc(b.id)} — ${esc(b.loc)}</p>
+            <p class="text-slate-500">${esc(b.type)} &bull; Fill: <strong>${b.fill}%</strong> &bull; ${esc(b.driver)}</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" data-edit-bin="${b.id}" class="px-2.5 py-1 rounded bg-slate-100 font-semibold">Edit</button>
+            <button type="button" data-del-bin="${b.id}" class="px-2.5 py-1 rounded bg-rose-50 text-rose-700 font-semibold">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('[data-edit-bin]').forEach(btn => btn.addEventListener('click', () => {
+        const b = state.bins.find(x => x.id === btn.dataset.editBin);
+        if (!b) return;
+        document.getElementById('b-id').value = b.id;
+        document.getElementById('b-loc').value = b.loc;
+        document.getElementById('b-type').value = b.type;
+        document.getElementById('b-fill').value = b.fill;
+        document.getElementById('b-driver').value = b.driver;
+      }));
+      document.querySelectorAll('[data-del-bin]').forEach(btn => btn.addEventListener('click', () => {
+        state.bins = state.bins.filter(x => x.id !== btn.dataset.delBin);
+        save(); render();
+      }));
+
+      document.getElementById('admin-cmp-list').innerHTML = state.complaints.map(c => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold">${esc(c.area)} (${esc(c.name)})</p><p class="text-slate-500">${esc(c.desc)}</p></div>
+          <select data-cmp-st="${c.id}" class="px-2 py-1 rounded border border-slate-300 bg-white">
+            ${['Pending', 'Assigned', 'Cleared'].map(s => `<option ${c.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+      document.querySelectorAll('[data-cmp-st]').forEach(s => s.addEventListener('change', () => {
+        const c = state.complaints.find(x => x.id === s.dataset.cmpSt);
+        if (c) { c.status = s.value; save(); render(); toast(`Complaint ${c.id} marked ${s.value}.`); }
+      }));
+
+      document.getElementById('pub-cmp-list').innerHTML = state.complaints.map(c => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold">${esc(c.area)}</p><p class="text-slate-500">${esc(c.desc)}</p></div>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">${esc(c.status)}</span>
+        </div>
+      `).join('');
+
+      // Driver route sorted by highest fill level
+      const selDrv = document.getElementById('drv-select').value || state.drivers[0];
+      const routeBins = state.bins.filter(b => b.driver === selDrv).sort((a, b) => b.fill - a.fill);
+      document.getElementById('drv-route-list').innerHTML = routeBins.map((b, i) => `
+        <div class="p-3.5 rounded-xl border border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+          <div>
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold mr-2">Stop #${i + 1}</span>
+            <span class="font-bold text-slate-900">${esc(b.loc)} (${esc(b.id)})</span>
+            <p class="text-slate-500 mt-1">${esc(b.type)} &bull; Current Load: ${b.fill}%</p>
+          </div>
+          <button type="button" data-collect-bin="${b.id}" class="px-3 py-1.5 rounded-lg bg-emerald-700 text-white font-semibold">Mark Emptied (0%)</button>
+        </div>
+      `).join('') || '<p class="text-xs text-slate-500">No bins assigned to this driver.</p>';
+
+      document.querySelectorAll('[data-collect-bin]').forEach(btn => btn.addEventListener('click', () => {
+        const b = state.bins.find(x => x.id === btn.dataset.collectBin);
+        if (b) { b.fill = 0; save(); render(); toast(`Collected ${b.id}. Load reset to 0%.`); }
+      }));
+
+      if (state.role === 'admin' && typeof Chart !== 'undefined') {
+        const types = ['Biodegradable (Green)', 'Recyclable (Blue)', 'Hazardous (Red)'];
+        const counts = types.map(t => state.bins.filter(b => b.type === t).length);
+        const ctx = document.getElementById('waste-chart').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: 'doughnut',
+          data: { labels: ['Biodegradable', 'Recyclable', 'Hazardous'], datasets: [{ data: counts, backgroundColor: ['#16a34a', '#2563eb', '#dc2626'] }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.addEventListener('click', () => { state.role = b.dataset.role; render(); }));
+      document.getElementById('drv-select').addEventListener('change', render);
+      document.getElementById('bin-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const id = document.getElementById('b-id').value;
+        const payload = {
+          loc: document.getElementById('b-loc').value.trim(),
+          type: document.getElementById('b-type').value,
+          fill: Number(document.getElementById('b-fill').value),
+          driver: document.getElementById('b-driver').value
+        };
+        if (id) {
+          const idx = state.bins.findIndex(x => x.id === id);
+          if (idx >= 0) state.bins[idx] = { ...state.bins[idx], ...payload };
+        } else {
+          state.bins.push({ id: 'BIN-' + Math.floor(104 + Math.random() * 890), ...payload });
+        }
+        e.target.reset(); document.getElementById('b-id').value = '';
+        save(); render(); toast('Garbage bin saved!');
+      });
+      document.getElementById('pub-cmp-form').addEventListener('submit', e => {
+        e.preventDefault();
+        state.complaints.unshift({
+          id: 'WC-' + Date.now(),
+          name: document.getElementById('pc-name').value.trim(),
+          area: document.getElementById('pc-area').value.trim(),
+          desc: document.getElementById('pc-desc').value.trim(),
+          status: 'Pending'
+        });
+        e.target.reset(); save(); render(); toast('Complaint registered!');
+      });
+      render();
+    });
+  </script>
+</body>
+</html>

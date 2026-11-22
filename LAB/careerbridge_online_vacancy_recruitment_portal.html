@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerBridge — Online Vacancy &amp; Recruitment Portal</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a}</style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 font-bold text-lg text-slate-900">
+        <i data-lucide="briefcase" class="w-5 h-5 text-blue-600"></i>
+        <span>CareerBridge</span>
+      </div>
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <button type="button" data-role="user" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white">Applicant</button>
+        <button type="button" data-role="director" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">Director</button>
+        <button type="button" data-role="admin" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">Admin</button>
+      </div>
+      <div id="auth-slot" class="flex items-center gap-2"></div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- APPLICANT VIEW -->
+    <section id="view-user" class="space-y-6">
+      <div class="bg-gradient-to-r from-blue-700 to-indigo-700 rounded-2xl p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold">Browse &amp; Apply for Vacancies</h1>
+          <p class="text-xs sm:text-sm text-blue-100 mt-1">All vacancies in one place. Filter by location &amp; category, save jobs, and set company privacy levels.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-white/15 px-3.5 py-2 rounded-xl text-xs">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span>Daily Vacancy Alerts: Active</span>
+        </div>
+      </div>
+
+      <!-- Search & Filter -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-4 gap-3 shadow-sm">
+        <input id="u-search" type="text" placeholder="Search job title or company..." class="md:col-span-2 px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        <select id="u-loc" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+          <option value="All">All Locations</option>
+          <option value="Chennai">Chennai</option>
+          <option value="Bengaluru">Bengaluru</option>
+          <option value="Hyderabad">Hyderabad</option>
+          <option value="Remote">Remote</option>
+        </select>
+        <select id="u-cat" class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+          <option value="All">All Categories</option>
+          <option value="Software">Software</option>
+          <option value="Data & AI">Data &amp; AI</option>
+          <option value="Design">Design</option>
+          <option value="Operations">Operations</option>
+        </select>
+      </div>
+
+      <!-- Privacy & Saved Jobs Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-slate-700">Resume Privacy Level:</span>
+          <select id="u-privacy" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white">
+            <option value="Public">Visible to All Approved Companies</option>
+            <option value="Selected">Only Companies I Apply To</option>
+            <option value="Private">Hidden (Manual Share Only)</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" id="toggle-saved-btn" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700">Saved Jobs (<span id="saved-count">0</span>)</button>
+        </div>
+      </div>
+
+      <div id="vacancy-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- DIRECTOR VIEW -->
+    <section id="view-director" class="hidden space-y-6">
+      <div id="dir-gate" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-center justify-between">
+        <span id="dir-status-msg">Director status: Checking approval...</span>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h2 class="text-base font-bold text-slate-900">Post Vacancy</h2>
+          <form id="dir-post-form" class="space-y-3">
+            <input id="dv-title" type="text" required placeholder="Job Title (e.g. Frontend Engineer)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <input id="dv-company" type="text" required placeholder="Company Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <div class="grid grid-cols-2 gap-2">
+              <select id="dv-loc" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option>Chennai</option><option>Bengaluru</option><option>Hyderabad</option><option>Remote</option>
+              </select>
+              <select id="dv-cat" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option>Software</option><option>Data &amp; AI</option><option>Design</option><option>Operations</option>
+              </select>
+            </div>
+            <input id="dv-contact" type="text" required placeholder="HR Contact Email / Phone" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <textarea id="dv-desc" rows="3" required placeholder="Role description, skills, salary..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+            <input id="dv-img" type="file" accept="image/*" class="w-full text-xs text-slate-500" />
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">Publish Vacancy</button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h2 class="text-base font-bold text-slate-900 mb-3">Posted Vacancies</h2>
+            <div id="dir-vac-list" class="space-y-2.5"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h2 class="text-base font-bold text-slate-900 mb-3">Applied Users &amp; Resumes</h2>
+            <div id="dir-app-list" class="space-y-2.5"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN VIEW -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <p class="text-xs text-slate-500">Total Vacancies</p>
+          <p id="rep-vacs" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <p class="text-xs text-slate-500">Total Applications</p>
+          <p id="rep-apps" class="text-2xl font-bold text-blue-600 mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <p class="text-xs text-slate-500">Registered Users</p>
+          <p id="rep-users" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h2 class="text-base font-bold text-slate-900">Approve Directors</h2>
+          <div id="admin-dir-list" class="space-y-2.5"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h2 class="text-base font-bold text-slate-900">View Registered Users</h2>
+          <div id="admin-user-list" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Apply Modal -->
+  <div id="apply-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold" id="apply-title">Apply for Vacancy</h3>
+        <button type="button" id="close-apply" class="text-slate-400 hover:text-slate-700">&times;</button>
+      </div>
+      <form id="apply-form" class="space-y-3">
+        <input id="app-name" type="text" required placeholder="Full Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <input id="app-email" type="email" required placeholder="Email Address" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <input id="app-skills" type="text" required placeholder="Key Skills (e.g. React, Python, SQL)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <label class="block text-xs text-slate-600">Attach Resume (PDF/DOC):
+          <input id="app-resume" type="file" accept=".pdf,.doc,.docx" class="mt-1 block w-full text-xs" />
+        </label>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold">Submit Application</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold">Account Login / Register</h3>
+        <button type="button" id="close-auth" class="text-slate-400 hover:text-slate-700">&times;</button>
+      </div>
+      <form id="auth-form" class="space-y-3">
+        <input id="auth-name" type="text" required placeholder="Full Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <input id="auth-email" type="email" required placeholder="Email" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <select id="auth-role" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+          <option value="user">Applicant (User)</option>
+          <option value="director">Director</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold">Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-box" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+  <script>
+    let state = {
+      role: 'user',
+      user: { name: 'Divya Krishnan', email: 'divya@example.com', role: 'user' },
+      showSavedOnly: false,
+      savedIds: [],
+      applyVacId: null,
+      uploadedImg: '',
+      directors: [
+        { id: 'D1', name: 'Arvind Menon', company: 'CloudScale Tech', approved: true },
+        { id: 'D2', name: 'Neha Kapoor', company: 'FinPulse Labs', approved: false }
+      ],
+      users: [
+        { name: 'Divya Krishnan', email: 'divya@example.com', privacy: 'Public' },
+        { name: 'Siddharth Rao', email: 'sid.rao@example.com', privacy: 'Selected' }
+      ],
+      vacancies: [
+        { id: 'V1', title: 'Full Stack Developer', company: 'CloudScale Tech', loc: 'Chennai', cat: 'Software', contact: 'hr@cloudscale.io', desc: 'Build scalable web apps using Node.js, React, and PostgreSQL.' },
+        { id: 'V2', title: 'Data Analyst', company: 'FinPulse Labs', loc: 'Bengaluru', cat: 'Data & AI', contact: 'talent@finpulse.in', desc: 'Analyze customer cohorts, SQL pipelines, and executive dashboards.' },
+        { id: 'V3', title: 'UI/UX Designer', company: 'PixelCraft Studio', loc: 'Remote', cat: 'Design', contact: 'jobs@pixelcraft.co', desc: 'Design accessible mobile and web interfaces in Figma.' }
+      ],
+      applications: [
+        { id: 'A1', vacId: 'V1', vacTitle: 'Full Stack Developer', name: 'Siddharth Rao', email: 'sid.rao@example.com', skills: 'React, Node.js, AWS', resume: 'Siddharth_Resume.pdf', status: 'Under Review' }
+      ]
+    };
+
+    try { const s = localStorage.getItem('careerbridge_v1'); if (s) state = { ...state, ...JSON.parse(s) }; } catch (e) {}
+    function save() { try { localStorage.setItem('careerbridge_v1', JSON.stringify(state)); } catch (e) {} }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg';
+      el.textContent = msg;
+      document.getElementById('toast-box').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    function render() {
+      ['user', 'director', 'admin'].forEach(r => {
+        document.getElementById(`view-${r}`).classList.toggle('hidden', state.role !== r);
+      });
+      document.querySelectorAll('.role-btn').forEach(b => {
+        b.className = b.dataset.role === state.role
+          ? 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white'
+          : 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600';
+      });
+
+      const authSlot = document.getElementById('auth-slot');
+      authSlot.innerHTML = state.user
+        ? `<span class="hidden sm:inline text-xs font-semibold text-slate-700">${esc(state.user.name)}</span>
+           <button type="button" id="logout-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold">Logout</button>`
+        : `<button type="button" id="login-btn" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold">Login / Register</button>`;
+      if (state.user) document.getElementById('logout-btn').addEventListener('click', () => { state.user = null; save(); render(); });
+      else document.getElementById('login-btn').addEventListener('click', () => document.getElementById('auth-modal').classList.remove('hidden'));
+
+      // User vacancies
+      const q = (document.getElementById('u-search').value || '').toLowerCase();
+      const loc = document.getElementById('u-loc').value;
+      const cat = document.getElementById('u-cat').value;
+      document.getElementById('saved-count').textContent = state.savedIds.length;
+      const filtered = state.vacancies.filter(v => {
+        const mQ = !q || v.title.toLowerCase().includes(q) || v.company.toLowerCase().includes(q);
+        const mL = loc === 'All' || v.loc === loc;
+        const mC = cat === 'All' || v.cat === cat;
+        const mS = !state.showSavedOnly || state.savedIds.includes(v.id);
+        return mQ && mL && mC && mS;
+      });
+      document.getElementById('vacancy-grid').innerHTML = filtered.map(v => {
+        const isSaved = state.savedIds.includes(v.id);
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${esc(v.cat)}</span>
+                <span class="text-[11px] text-slate-400">${esc(v.loc)}</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">${esc(v.title)}</h3>
+              <p class="text-xs font-semibold text-slate-600">${esc(v.company)}</p>
+              <p class="text-xs text-slate-500">${esc(v.desc)}</p>
+              <p class="text-[11px] text-slate-400">Contact: ${esc(v.contact)}</p>
+            </div>
+            <div class="flex gap-2 pt-2 border-t border-slate-100">
+              <button type="button" data-save-vac="${v.id}" class="px-3 py-1.5 rounded-lg border text-xs font-semibold ${isSaved ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-slate-200 text-slate-600'}">${isSaved ? 'Saved' : 'Save'}</button>
+              <button type="button" data-apply-vac="${v.id}" class="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">Apply Online</button>
+            </div>
+          </div>
+        `;
+      }).join('') || '<p class="text-sm text-slate-500">No matching vacancies found.</p>';
+
+      document.querySelectorAll('[data-save-vac]').forEach(b => b.addEventListener('click', () => {
+        const id = b.dataset.saveVac;
+        state.savedIds = state.savedIds.includes(id) ? state.savedIds.filter(x => x !== id) : [...state.savedIds, id];
+        save(); render();
+      }));
+      document.querySelectorAll('[data-apply-vac]').forEach(b => b.addEventListener('click', () => {
+        state.applyVacId = b.dataset.applyVac;
+        const v = state.vacancies.find(x => x.id === state.applyVacId);
+        document.getElementById('apply-title').textContent = `Apply: ${v.title} (${v.company})`;
+        document.getElementById('apply-modal').classList.remove('hidden');
+      }));
+
+      // Director view
+      const activeDir = state.directors[0];
+      document.getElementById('dir-status-msg').textContent = `Director Account (${activeDir.company}): ${activeDir.approved ? 'Approved by Admin' : 'Pending Admin Approval'}`;
+      document.getElementById('dir-vac-list').innerHTML = state.vacancies.map(v => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold text-slate-900">${esc(v.title)}</p><p class="text-slate-500">${esc(v.company)} &bull; ${esc(v.loc)}</p></div>
+          <span class="px-2 py-0.5 rounded bg-slate-100">${esc(v.cat)}</span>
+        </div>
+      `).join('');
+      document.getElementById('dir-app-list').innerHTML = state.applications.map(a => `
+        <div class="p-3 rounded-xl border border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+          <div>
+            <p class="font-bold text-slate-900">${esc(a.name)} — ${esc(a.vacTitle)}</p>
+            <p class="text-slate-500">Skills: ${esc(a.skills)} &bull; Resume: ${esc(a.resume)}</p>
+          </div>
+          <select data-app-st="${a.id}" class="px-2 py-1 rounded border border-slate-300 bg-white">
+            ${['Under Review', 'Shortlisted', 'Selected', 'Rejected'].map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+      document.querySelectorAll('[data-app-st]').forEach(s => s.addEventListener('change', () => {
+        const app = state.applications.find(x => x.id === s.dataset.appSt);
+        if (app) { app.status = s.value; save(); toast(`Candidate ${app.name} marked ${s.value}.`); }
+      }));
+
+      // Admin view
+      document.getElementById('rep-vacs').textContent = state.vacancies.length;
+      document.getElementById('rep-apps').textContent = state.applications.length;
+      document.getElementById('rep-users').textContent = state.users.length;
+      document.getElementById('admin-dir-list').innerHTML = state.directors.map(d => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold">${esc(d.name)}</p><p class="text-slate-500">${esc(d.company)}</p></div>
+          <button type="button" data-toggle-dir="${d.id}" class="px-3 py-1 rounded-lg font-semibold ${d.approved ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-600 text-white'}">
+            ${d.approved ? 'Approved' : 'Approve Director'}
+          </button>
+        </div>
+      `).join('');
+      document.querySelectorAll('[data-toggle-dir]').forEach(b => b.addEventListener('click', () => {
+        const d = state.directors.find(x => x.id === b.dataset.toggleDir);
+        if (d) { d.approved = !d.approved; save(); render(); toast(`${d.name} ${d.approved ? 'approved' : 'unapproved'}.`); }
+      }));
+      document.getElementById('admin-user-list').innerHTML = state.users.map(u => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold">${esc(u.name)}</p><p class="text-slate-500">${esc(u.email)}</p></div>
+          <span class="px-2 py-0.5 rounded bg-slate-100">Privacy: ${esc(u.privacy)}</span>
+        </div>
+      `).join('');
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.addEventListener('click', () => { state.role = b.dataset.role; render(); }));
+      ['u-search', 'u-loc', 'u-cat'].forEach(id => document.getElementById(id).addEventListener('input', render));
+      document.getElementById('toggle-saved-btn').addEventListener('click', () => { state.showSavedOnly = !state.showSavedOnly; render(); });
+      document.getElementById('close-apply').addEventListener('click', () => document.getElementById('apply-modal').classList.add('hidden'));
+      document.getElementById('apply-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const v = state.vacancies.find(x => x.id === state.applyVacId);
+        const f = document.getElementById('app-resume').files[0];
+        state.applications.unshift({
+          id: 'A' + Date.now(),
+          vacId: v.id,
+          vacTitle: v.title,
+          name: document.getElementById('app-name').value.trim(),
+          email: document.getElementById('app-email').value.trim(),
+          skills: document.getElementById('app-skills').value.trim(),
+          resume: f ? f.name : 'Uploaded_Resume.pdf',
+          status: 'Under Review'
+        });
+        e.target.reset();
+        document.getElementById('apply-modal').classList.add('hidden');
+        save(); render(); toast('Application submitted successfully!');
+      });
+      document.getElementById('dir-post-form').addEventListener('submit', e => {
+        e.preventDefault();
+        state.vacancies.unshift({
+          id: 'V' + Date.now(),
+          title: document.getElementById('dv-title').value.trim(),
+          company: document.getElementById('dv-company').value.trim(),
+          loc: document.getElementById('dv-loc').value,
+          cat: document.getElementById('dv-cat').value,
+          contact: document.getElementById('dv-contact').value.trim(),
+          desc: document.getElementById('dv-desc').value.trim()
+        });
+        e.target.reset(); save(); render(); toast('Vacancy published!');
+      });
+      document.getElementById('close-auth').addEventListener('click', () => document.getElementById('auth-modal').classList.add('hidden'));
+      document.getElementById('auth-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('auth-name').value.trim();
+        const email = document.getElementById('auth-email').value.trim();
+        const role = document.getElementById('auth-role').value;
+        state.user = { name, email, role };
+        if (role === 'user' && !state.users.some(u => u.email === email)) state.users.push({ name, email, privacy: 'Public' });
+        state.role = role;
+        document.getElementById('auth-modal').classList.add('hidden');
+        save(); render(); toast(`Signed in as ${name}`);
+      });
+      render();
+    });
+  </script>
+</body>
+</html>

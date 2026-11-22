@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoteOnline — Secure E-Voting &amp; Election Management Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            navy: { 50: '#eef2ff', 100: '#e0e7ff', 600: '#3730a3', 700: '#312e81', 900: '#1e1b4b' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+    .fade-in { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .role-active { background: #312e81; color: #ffffff; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-indigo-700 text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="vote" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-lg font-bold tracking-tight text-slate-900">VoteOnline</span>
+          <span class="hidden sm:inline-block ml-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            AES-256 Encrypted
+          </span>
+        </div>
+      </div>
+
+      <!-- Portal Switcher -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1">
+        <button type="button" id="switch-voter-portal" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors role-active flex items-center gap-1.5">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span>Voter Portal</span>
+        </button>
+        <button type="button" id="switch-admin-portal" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+          <span>Admin Console</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ==================== VOTER PORTAL ==================== -->
+    <section id="portal-voter" class="fade-in space-y-6">
+
+      <!-- Voter Sub-Nav -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm" id="voter-avatar">
+            ?
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-900" id="voter-header-name">Not Signed In</p>
+            <p class="text-xs text-slate-500" id="voter-header-meta">Authenticate with your Voter ID &amp; OTP to cast your ballot</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" data-vtab="ballot" class="vtab-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700">Ballot &amp; Login</button>
+          <button type="button" data-vtab="history" class="vtab-btn px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">Voting History</button>
+          <button type="button" data-vtab="live" class="vtab-btn px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">Live Progress</button>
+          <button type="button" id="voter-logout-btn" class="hidden px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Voter Tab 1: Login + Ballot -->
+      <div id="vtab-ballot" class="space-y-6">
+        <!-- Step A: Voter ID + OTP Login -->
+        <div id="voter-auth-card" class="max-w-lg mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5">
+          <div class="text-center space-y-1">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center mx-auto mb-2">
+              <i data-lucide="key-round" class="w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-bold text-slate-900">Voter Authentication</h1>
+            <p class="text-xs text-slate-500">Multi-factor verification using your registered Voter ID and one-time password.</p>
+          </div>
+
+          <form id="voter-id-form" class="space-y-4">
+            <div>
+              <label for="login-voter-id" class="block text-xs font-semibold text-slate-700 mb-1.5">Voter ID *</label>
+              <div class="flex gap-2">
+                <input id="login-voter-id" type="text" required placeholder="e.g. VOT-1001" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase" />
+                <button type="submit" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold shrink-0 transition-colors">
+                  Send Login OTP
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Quick Demo Voter IDs -->
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Demo Voter IDs (Click to fill)</p>
+            <div class="flex flex-wrap gap-1.5" id="demo-voter-chips"></div>
+          </div>
+
+          <!-- Step B: OTP Verification -->
+          <form id="voter-otp-form" class="hidden space-y-3 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+              <label for="login-otp-input" class="text-xs font-semibold text-slate-700">Enter 6-Digit Login OTP</label>
+              <span id="login-otp-hint" class="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200"></span>
+            </div>
+            <div class="flex gap-2">
+              <input id="login-otp-input" type="text" maxlength="6" required placeholder="6-digit OTP" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0 transition-colors">
+                Verify &amp; Enter
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step C: Active Ballot (Shown after OTP Login) -->
+        <div id="voter-ballot-area" class="hidden space-y-6">
+          <div class="bg-gradient-to-r from-indigo-800 to-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+            <div>
+              <span id="ballot-ward-badge" class="inline-block text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 mb-1.5"></span>
+              <h2 id="ballot-election-title" class="text-xl sm:text-2xl font-bold"></h2>
+              <p class="text-xs sm:text-sm text-indigo-100 mt-0.5">Select one candidate below, request your Voting OTP, and submit your encrypted ballot.</p>
+            </div>
+            <div class="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-xs space-y-1 shrink-0">
+              <p class="font-semibold flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5"></i> End-to-End Encrypted</p>
+              <p class="text-indigo-100">One ballot per verified Voter ID</p>
+            </div>
+          </div>
+
+          <!-- Already Voted Banner -->
+          <div id="already-voted-banner" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-emerald-900">Your Vote Has Been Recorded</h3>
+                <p class="text-xs text-emerald-700 mt-0.5">Receipt Hash: <span id="voted-receipt-hash" class="font-mono font-semibold"></span></p>
+              </div>
+            </div>
+            <button type="button" id="view-history-cta" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shrink-0">
+              View Confirmation Receipt
+            </button>
+          </div>
+
+          <!-- Candidate Cards -->
+          <div id="ballot-candidates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+          <!-- Voting OTP & Submit Bar -->
+          <div id="vote-submit-bar" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Selected Candidate</p>
+              <p id="selected-cand-label" class="text-sm font-bold text-slate-900">None selected — click a candidate card above</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button type="button" id="get-voting-otp-btn" class="px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors">
+                Get OTP for Voting
+              </button>
+              <input id="voting-otp-input" type="text" maxlength="6" placeholder="Enter Voting OTP" class="w-40 px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button type="button" id="submit-vote-btn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                Submit Vote
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voter Tab 2: Voting History -->
+      <div id="vtab-history" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h2 class="text-lg font-bold text-slate-900 mb-1">Voting History &amp; Encrypted Receipts</h2>
+          <p class="text-xs text-slate-500 mb-4">Audit trail of ballots cast with cryptographic confirmation hashes.</p>
+          <div id="voter-history-list" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- Voter Tab 3: Live Progress -->
+      <div id="vtab-live" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Real-Time Election Progress</h2>
+              <p class="text-xs text-slate-500">Live turnout and ward participation metrics.</p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Polls Open
+            </span>
+          </div>
+          <div id="voter-live-stats" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ADMIN CONSOLE ==================== -->
+    <section id="portal-admin" class="hidden fade-in space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Election Administration Console</h1>
+          <p class="text-xs sm:text-sm text-slate-500">Manage candidates, allocate election wards, import/update voter lists, and inspect live results.</p>
+        </div>
+        <div class="flex flex-wrap gap-1.5 bg-white border border-slate-200 p-1 rounded-xl">
+          <button type="button" data-atab="candidates" class="atab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-700 text-white">Candidates &amp; Data</button>
+          <button type="button" data-atab="voters" class="atab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">Voter List &amp; Wards</button>
+          <button type="button" data-atab="results" class="atab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">Election Results</button>
+        </div>
+      </div>
+
+      <!-- Admin Tab 1: Create Candidate & Allocate Election Data -->
+      <div id="atab-candidates" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4 text-indigo-700"></i>
+            Create Election Candidate
+          </h2>
+          <form id="admin-cand-form" class="space-y-3">
+            <div>
+              <label for="ac-name" class="block text-xs font-medium text-slate-700 mb-1">Candidate Name *</label>
+              <input id="ac-name" type="text" required placeholder="e.g. Dr. Meera Krishnan" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label for="ac-party" class="block text-xs font-medium text-slate-700 mb-1">Party / Platform *</label>
+              <input id="ac-party" type="text" required placeholder="e.g. Civic Progress Alliance" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label for="ac-election" class="block text-xs font-medium text-slate-700 mb-1">Allocate Election *</label>
+              <input id="ac-election" type="text" required value="2026 Municipal Council Election" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label for="ac-ward" class="block text-xs font-medium text-slate-700 mb-1">Allocate Ward *</label>
+              <select id="ac-ward" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option value="Ward 1 - North">Ward 1 - North</option>
+                <option value="Ward 2 - Central">Ward 2 - Central</option>
+                <option value="Ward 3 - South">Ward 3 - South</option>
+              </select>
+            </div>
+            <div>
+              <label for="ac-bio" class="block text-xs font-medium text-slate-700 mb-1">Manifesto / Key Pledge</label>
+              <textarea id="ac-bio" rows="2" placeholder="Clean transit, open budgets, and digital public services..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold transition-colors">
+              Save &amp; Allocate Candidate
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900">Allocated Candidates &amp; Election Data</h2>
+            <span id="admin-cand-count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700"></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                  <th class="py-2.5 px-3">Candidate</th>
+                  <th class="py-2.5 px-3">Election</th>
+                  <th class="py-2.5 px-3">Ward</th>
+                  <th class="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-cand-table" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab 2: Voter List (Create, Import, View & Update, Allocate Wards) -->
+      <div id="atab-voters" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Create Voter -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <h2 class="text-base font-bold text-slate-900">Create Voter &amp; Allocate Ward</h2>
+            <form id="admin-voter-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="av-id" class="block text-xs font-medium text-slate-700 mb-1">Voter ID *</label>
+                <input id="av-id" type="text" required placeholder="VOT-1005" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm uppercase" />
+              </div>
+              <div>
+                <label for="av-name" class="block text-xs font-medium text-slate-700 mb-1">Full Name *</label>
+                <input id="av-name" type="text" required placeholder="Rohan Verma" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              </div>
+              <div>
+                <label for="av-phone" class="block text-xs font-medium text-slate-700 mb-1">Mobile (for OTP) *</label>
+                <input id="av-phone" type="tel" required placeholder="+91 98765 43210" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              </div>
+              <div>
+                <label for="av-ward" class="block text-xs font-medium text-slate-700 mb-1">Assign Ward *</label>
+                <select id="av-ward" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                  <option value="Ward 1 - North">Ward 1 - North</option>
+                  <option value="Ward 2 - Central">Ward 2 - Central</option>
+                  <option value="Ward 3 - South">Ward 3 - South</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold">
+                  Add Voter to Roll
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Import Voter List -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-slate-900">Import Voter List (CSV)</h2>
+              <button type="button" id="load-sample-csv-btn" class="text-xs font-semibold text-indigo-700 hover:underline">Load Sample CSV</button>
+            </div>
+            <p class="text-xs text-slate-500">Paste CSV rows or upload a `.csv` file with format: <code class="bg-slate-100 px-1.5 py-0.5 rounded">VoterID,Name,Ward,Phone</code></p>
+            <textarea id="import-csv-text" rows="3" placeholder="VOT-1006,Ananya Rao,Ward 1 - North,+91 90000 11111" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-mono"></textarea>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="px-3 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+                Choose .CSV File
+                <input id="import-csv-file" type="file" accept=".csv,.txt" class="hidden" />
+              </label>
+              <button type="button" id="run-csv-import-btn" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold">
+                Import Voters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- View & Update Voter List -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 class="text-base font-bold text-slate-900">Registered Voter List (View &amp; Update Wards)</h2>
+            <input id="admin-voter-search" type="text" placeholder="Search Voter ID or name..." class="px-3 py-2 rounded-lg border border-slate-300 text-xs sm:w-64" />
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                  <th class="py-2.5 px-3">Voter ID</th>
+                  <th class="py-2.5 px-3">Name &amp; Phone</th>
+                  <th class="py-2.5 px-3">Allocated Ward</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3 text-right">Remove</th>
+                </tr>
+              </thead>
+              <tbody id="admin-voter-table" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab 3: Election Results -->
+      <div id="atab-results" class="hidden space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 uppercase">Registered Voters</p>
+            <p id="res-total-voters" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 uppercase">Votes Cast</p>
+            <p id="res-votes-cast" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 uppercase">Turnout Rate</p>
+            <p id="res-turnout" class="text-2xl font-bold text-indigo-700 mt-1">0%</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-xs font-medium text-slate-500 uppercase">Active Candidates</p>
+            <p id="res-cand-count" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 mb-3">Live Vote Tally by Candidate</h3>
+            <div class="relative h-64">
+              <canvas id="results-chart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-900">Detailed Ward &amp; Candidate Standings</h3>
+            <div id="results-standings-list" class="space-y-2.5 max-h-64 overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <script>
+    const STORAGE_KEY = 'voteonline_state_v1';
+    const WARDS = ['Ward 1 - North', 'Ward 2 - Central', 'Ward 3 - South'];
+
+    const DEFAULT_CANDIDATES = [
+      { id: 'C1', name: 'Dr. Meera Krishnan', party: 'Civic Progress Alliance', election: '2026 Municipal Council Election', ward: 'Ward 1 - North', bio: 'Advocating for zero-emission public transit and transparent ward budgets.', votes: 14 },
+      { id: 'C2', name: 'Arjun Subramanian', party: 'Metro Renewal Front', election: '2026 Municipal Council Election', ward: 'Ward 1 - North', bio: 'Focused on smart street lighting, storm-water drainage, and neighborhood parks.', votes: 11 },
+      { id: 'C3', name: 'Kavita Deshmukh', party: 'Independent Reformers', election: '2026 Municipal Council Election', ward: 'Ward 2 - Central', bio: 'Expanding digital literacy centers and affordable primary healthcare clinics.', votes: 19 },
+      { id: 'C4', name: 'Vikram Menon', party: 'Civic Progress Alliance', election: '2026 Municipal Council Election', ward: 'Ward 2 - Central', bio: 'Modernizing water supply sensors and local small-business grants.', votes: 16 },
+      { id: 'C5', name: 'Nadia Farooq', party: 'Green Future Coalition', election: '2026 Municipal Council Election', ward: 'Ward 3 - South', bio: 'Solar microgrids for public schools and safer pedestrian corridors.', votes: 22 }
+    ];
+
+    const DEFAULT_VOTERS = [
+      { voterId: 'VOT-1001', name: 'Karthik Rajan', phone: '+91 98401 11223', ward: 'Ward 1 - North', hasVoted: false },
+      { voterId: 'VOT-1002', name: 'Sneha Iyer', phone: '+91 98402 33445', ward: 'Ward 2 - Central', hasVoted: false },
+      { voterId: 'VOT-1003', name: 'Rahul Sharma', phone: '+91 98403 55667', ward: 'Ward 3 - South', hasVoted: false }
+    ];
+
+    let state = {
+      portal: 'voter',
+      voterTab: 'ballot',
+      adminTab: 'candidates',
+      candidates: [...DEFAULT_CANDIDATES],
+      voters: [...DEFAULT_VOTERS],
+      history: [],
+      pendingLoginVoterId: null,
+      pendingLoginOtp: null,
+      currentVoterId: null,
+      selectedCandidateId: null,
+      votingOtp: null
+    };
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (Array.isArray(p.candidates)) state.candidates = p.candidates;
+        if (Array.isArray(p.voters)) state.voters = p.voters;
+        if (Array.isArray(p.history)) state.history = p.history;
+      }
+    } catch (e) {}
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          candidates: state.candidates,
+          voters: state.voters,
+          history: state.history
+        }));
+      } catch (e) {}
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function genOtp() {
+      return String(Math.floor(100000 + Math.random() * 900000));
+    }
+
+    function genReceiptHash() {
+      const chars = '0123456789abcdef';
+      let out = '0x';
+      for (let i = 0; i < 16; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    }
+
+    function showToast(title, msg, tone = 'info') {
+      const box = document.getElementById('toast-container');
+      const cls = tone === 'success' ? 'bg-emerald-900 border-emerald-700' : tone === 'warn' ? 'bg-amber-900 border-amber-700' : 'bg-slate-900 border-slate-700';
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto rounded-xl border text-white p-3.5 shadow-lg fade-in ${cls}`;
+      el.innerHTML = `<p class="text-xs font-bold">${esc(title)}</p><p class="text-xs opacity-90 mt-0.5">${esc(msg)}</p>`;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 5500);
+    }
+
+    // ---------- PORTAL & TAB SWITCHING ----------
+    function switchPortal(portal) {
+      state.portal = portal;
+      document.getElementById('portal-voter').classList.toggle('hidden', portal !== 'voter');
+      document.getElementById('portal-admin').classList.toggle('hidden', portal !== 'admin');
+      document.getElementById('switch-voter-portal').className = portal === 'voter'
+        ? 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors role-active flex items-center gap-1.5'
+        : 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5';
+      document.getElementById('switch-admin-portal').className = portal === 'admin'
+        ? 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors role-active flex items-center gap-1.5'
+        : 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5';
+      if (portal === 'admin') renderAdmin();
+      else renderVoterPortal();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function switchVoterTab(tab) {
+      state.voterTab = tab;
+      ['ballot', 'history', 'live'].forEach(t => {
+        document.getElementById(`vtab-${t}`).classList.toggle('hidden', t !== tab);
+      });
+      document.querySelectorAll('.vtab-btn').forEach(btn => {
+        btn.className = btn.dataset.vtab === tab
+          ? 'vtab-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700'
+          : 'vtab-btn px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100';
+      });
+      renderVoterPortal();
+    }
+
+    function switchAdminTab(tab) {
+      state.adminTab = tab;
+      ['candidates', 'voters', 'results'].forEach(t => {
+        document.getElementById(`atab-${t}`).classList.toggle('hidden', t !== tab);
+      });
+      document.querySelectorAll('.atab-btn').forEach(btn => {
+        btn.className = btn.dataset.atab === tab
+          ? 'atab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-700 text-white'
+          : 'atab-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100';
+      });
+      renderAdmin();
+    }
+
+    // ---------- VOTER PORTAL RENDER ----------
+    function renderVoterPortal() {
+      // Demo chips
+      const chipsEl = document.getElementById('demo-voter-chips');
+      chipsEl.innerHTML = state.voters.slice(0, 4).map(v => `
+        <button type="button" data-fill-vid="${esc(v.voterId)}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-[11px] font-semibold text-slate-700">
+          ${esc(v.voterId)} (${esc(v.ward.split(' - ')[0])})
+        </button>
+      `).join('');
+      chipsEl.querySelectorAll('[data-fill-vid]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('login-voter-id').value = btn.dataset.fillVid;
+        });
+      });
+
+      const voter = state.voters.find(v => v.voterId === state.currentVoterId);
+      const authCard = document.getElementById('voter-auth-card');
+      const ballotArea = document.getElementById('voter-ballot-area');
+      const logoutBtn = document.getElementById('voter-logout-btn');
+
+      if (voter) {
+        document.getElementById('voter-avatar').textContent = voter.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        document.getElementById('voter-header-name').textContent = `${voter.name} (${voter.voterId})`;
+        document.getElementById('voter-header-meta').textContent = `Allocated to ${voter.ward} • Verified via OTP`;
+        logoutBtn.classList.remove('hidden');
+        authCard.classList.add('hidden');
+        ballotArea.classList.remove('hidden');
+
+        const wardCandidates = state.candidates.filter(c => c.ward === voter.ward);
+        document.getElementById('ballot-ward-badge').textContent = voter.ward;
+        document.getElementById('ballot-election-title').textContent = wardCandidates[0]?.election || '2026 Municipal Council Election';
+
+        const votedRecord = state.history.find(h => h.voterId === voter.voterId);
+        const alreadyBanner = document.getElementById('already-voted-banner');
+        const submitBar = document.getElementById('vote-submit-bar');
+
+        if (voter.hasVoted || votedRecord) {
+          alreadyBanner.classList.remove('hidden');
+          submitBar.classList.add('hidden');
+          document.getElementById('voted-receipt-hash').textContent = votedRecord?.receipt || '0x9a4f82e1c3b0d712';
+        } else {
+          alreadyBanner.classList.add('hidden');
+          submitBar.classList.remove('hidden');
+        }
+
+        const grid = document.getElementById('ballot-candidates-grid');
+        if (wardCandidates.length === 0) {
+          grid.innerHTML = `<div class="md:col-span-3 bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">No candidates allocated to ${esc(voter.ward)} yet. Ask the Admin to allocate candidates.</div>`;
+        } else {
+          grid.innerHTML = wardCandidates.map(c => {
+            const isSel = state.selectedCandidateId === c.id;
+            return `
+              <div data-pick-cand="${esc(c.id)}" class="cursor-pointer rounded-2xl border-2 p-5 bg-white shadow-sm transition-all ${isSel ? 'border-indigo-700 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'}">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">${esc(c.party)}</span>
+                    <h3 class="text-base font-bold text-slate-900 mt-2">${esc(c.name)}</h3>
+                  </div>
+                  <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSel ? 'border-indigo-700 bg-indigo-700 text-white' : 'border-slate-300'}">
+                    ${isSel ? '<span class="text-xs font-bold">&#10003;</span>' : ''}
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 mt-2.5 leading-relaxed">${esc(c.bio)}</p>
+              </div>
+            `;
+          }).join('');
+
+          if (!voter.hasVoted) {
+            grid.querySelectorAll('[data-pick-cand]').forEach(card => {
+              card.addEventListener('click', () => {
+                state.selectedCandidateId = card.dataset.pickCand;
+                const chosen = state.candidates.find(x => x.id === state.selectedCandidateId);
+                document.getElementById('selected-cand-label').textContent = chosen ? `${chosen.name} (${chosen.party})` : 'None selected';
+                renderVoterPortal();
+              });
+            });
+          }
+        }
+      } else {
+        document.getElementById('voter-avatar').textContent = '?';
+        document.getElementById('voter-header-name').textContent = 'Not Signed In';
+        document.getElementById('voter-header-meta').textContent = 'Authenticate with your Voter ID & OTP to cast your ballot';
+        logoutBtn.classList.add('hidden');
+        authCard.classList.remove('hidden');
+        ballotArea.classList.add('hidden');
+      }
+
+      // History Tab
+      const histList = document.getElementById('voter-history-list');
+      if (state.history.length === 0) {
+        histList.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">No votes cast in this session yet.</p>`;
+      } else {
+        histList.innerHTML = state.history.map(h => `
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p class="text-sm font-bold text-slate-900">${esc(h.election)} — ${esc(h.ward)}</p>
+              <p class="text-xs text-slate-600">Voter: ${esc(h.voterId)} &bull; Cast at ${esc(h.time)}</p>
+            </div>
+            <div class="text-left sm:text-right">
+              <span class="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Confirmed</span>
+              <p class="text-[11px] font-mono text-slate-500 mt-1">Receipt: ${esc(h.receipt)}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Live Progress Tab
+      const totalVoters = state.voters.length;
+      const totalVotes = state.candidates.reduce((s, c) => s + c.votes, 0);
+      document.getElementById('voter-live-stats').innerHTML = `
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs text-slate-500 font-medium">Total Ballots Cast</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1">${totalVotes}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs text-slate-500 font-medium">Registered Roll</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1">${totalVoters}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs text-slate-500 font-medium">Active Wards</p>
+          <p class="text-2xl font-bold text-indigo-700 mt-1">${WARDS.length}</p>
+        </div>
+      `;
+    }
+
+    // ---------- ADMIN RENDER ----------
+    let resultsChart = null;
+
+    function renderAdmin() {
+      // Candidates Table
+      document.getElementById('admin-cand-count').textContent = `${state.candidates.length} Candidates`;
+      document.getElementById('admin-cand-table').innerHTML = state.candidates.map(c => `
+        <tr>
+          <td class="py-3 px-3">
+            <p class="font-semibold text-slate-900">${esc(c.name)}</p>
+            <p class="text-xs text-slate-500">${esc(c.party)}</p>
+          </td>
+          <td class="py-3 px-3 text-xs text-slate-600">${esc(c.election)}</td>
+          <td class="py-3 px-3">
+            <select data-realloc-cand="${esc(c.id)}" class="px-2 py-1 rounded-lg border border-slate-300 text-xs bg-white">
+              ${WARDS.map(w => `<option value="${w}" ${c.ward === w ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+          </td>
+          <td class="py-3 px-3 text-right">
+            <button type="button" data-del-cand="${esc(c.id)}" class="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('[data-realloc-cand]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const cand = state.candidates.find(x => x.id === sel.dataset.reallocCand);
+          if (cand) {
+            cand.ward = sel.value;
+            saveState();
+            showToast('Ward Updated', `${cand.name} allocated to ${sel.value}.`, 'success');
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-del-cand]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.candidates = state.candidates.filter(x => x.id !== btn.dataset.delCand);
+          saveState();
+          renderAdmin();
+        });
+      });
+
+      // Voters Table
+      const vq = (document.getElementById('admin-voter-search').value || '').trim().toLowerCase();
+      const filteredVoters = state.voters.filter(v => !vq || v.voterId.toLowerCase().includes(vq) || v.name.toLowerCase().includes(vq));
+      document.getElementById('admin-voter-table').innerHTML = filteredVoters.map(v => `
+        <tr>
+          <td class="py-3 px-3 font-mono text-xs font-bold text-slate-900">${esc(v.voterId)}</td>
+          <td class="py-3 px-3">
+            <p class="font-medium text-slate-900">${esc(v.name)}</p>
+            <p class="text-xs text-slate-500">${esc(v.phone)}</p>
+          </td>
+          <td class="py-3 px-3">
+            <select data-voter-ward="${esc(v.voterId)}" class="px-2 py-1 rounded-lg border border-slate-300 text-xs bg-white">
+              ${WARDS.map(w => `<option value="${w}" ${v.ward === w ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+          </td>
+          <td class="py-3 px-3">
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${v.hasVoted ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+              ${v.hasVoted ? 'Voted' : 'Pending'}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-right">
+            <button type="button" data-del-voter="${esc(v.voterId)}" class="text-xs font-semibold text-rose-600 hover:underline">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('[data-voter-ward]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const v = state.voters.find(x => x.voterId === sel.dataset.voterWard);
+          if (v) {
+            v.ward = sel.value;
+            saveState();
+            showToast('Voter Ward Updated', `${v.voterId} assigned to ${sel.value}.`, 'success');
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-del-voter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.voters = state.voters.filter(x => x.voterId !== btn.dataset.delVoter);
+          saveState();
+          renderAdmin();
+        });
+      });
+
+      // Results Tab
+      const totalVotes = state.candidates.reduce((s, c) => s + c.votes, 0);
+      const votedCount = state.voters.filter(v => v.hasVoted).length;
+      const turnout = state.voters.length ? Math.round((votedCount / state.voters.length) * 100) : 0;
+
+      document.getElementById('res-total-voters').textContent = state.voters.length;
+      document.getElementById('res-votes-cast').textContent = totalVotes;
+      document.getElementById('res-turnout').textContent = `${turnout}%`;
+      document.getElementById('res-cand-count').textContent = state.candidates.length;
+
+      const sorted = [...state.candidates].sort((a, b) => b.votes - a.votes);
+      document.getElementById('results-standings-list').innerHTML = sorted.map(c => {
+        const pct = totalVotes ? Math.round((c.votes / totalVotes) * 100) : 0;
+        return `
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-900">${esc(c.name)} <span class="font-normal text-slate-500">(${esc(c.ward)})</span></span>
+              <span class="font-bold text-indigo-700">${c.votes} votes (${pct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+              <div class="h-full bg-indigo-600 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (state.adminTab === 'results' && typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('results-chart').getContext('2d');
+        if (resultsChart) resultsChart.destroy();
+        resultsChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: sorted.map(c => c.name),
+            datasets: [{
+              label: 'Votes',
+              data: sorted.map(c => c.votes),
+              backgroundColor: '#3730a3',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 5 } } }
+          }
+        });
+      }
+    }
+
+    // ---------- EVENT LISTENERS ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('switch-voter-portal').addEventListener('click', () => switchPortal('voter'));
+      document.getElementById('switch-admin-portal').addEventListener('click', () => switchPortal('admin'));
+      document.querySelectorAll('.vtab-btn').forEach(b => b.addEventListener('click', () => switchVoterTab(b.dataset.vtab)));
+      document.querySelectorAll('.atab-btn').forEach(b => b.addEventListener('click', () => switchAdminTab(b.dataset.atab)));
+
+      // Voter ID -> Send Login OTP
+      document.getElementById('voter-id-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const vid = document.getElementById('login-voter-id').value.trim().toUpperCase();
+        const voter = state.voters.find(v => v.voterId === vid);
+        if (!voter) {
+          showToast('Voter ID Not Found', `No voter registered with ID "${vid}". Try VOT-1001 or add one in Admin.`, 'warn');
+          return;
+        }
+        const otp = genOtp();
+        state.pendingLoginVoterId = vid;
+        state.pendingLoginOtp = otp;
+        document.getElementById('voter-otp-form').classList.remove('hidden');
+        document.getElementById('login-otp-hint').textContent = `Demo OTP: ${otp}`;
+        showToast('Login OTP Dispatched', `Sent 6-digit OTP (${otp}) to ${voter.phone}.`, 'info');
+      });
+
+      // Verify Login OTP
+      document.getElementById('voter-otp-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const entered = document.getElementById('login-otp-input').value.trim();
+        if (entered !== state.pendingLoginOtp) {
+          showToast('Invalid OTP', 'The OTP entered does not match. Check the Demo OTP badge.', 'warn');
+          return;
+        }
+        state.currentVoterId = state.pendingLoginVoterId;
+        state.pendingLoginOtp = null;
+        state.selectedCandidateId = null;
+        state.votingOtp = null;
+        document.getElementById('voter-otp-form').classList.add('hidden');
+        document.getElementById('login-otp-input').value = '';
+        renderVoterPortal();
+        showToast('Authenticated', `Signed in as ${state.currentVoterId}.`, 'success');
+      });
+
+      document.getElementById('voter-logout-btn').addEventListener('click', () => {
+        state.currentVoterId = null;
+        state.selectedCandidateId = null;
+        state.votingOtp = null;
+        renderVoterPortal();
+      });
+
+      document.getElementById('view-history-cta').addEventListener('click', () => switchVoterTab('history'));
+
+      // Get OTP for Voting
+      document.getElementById('get-voting-otp-btn').addEventListener('click', () => {
+        const otp = genOtp();
+        state.votingOtp = otp;
+        document.getElementById('voting-otp-input').value = otp;
+        showToast('Voting OTP Generated', `Your ballot authorization OTP is ${otp} (auto-filled for demo).`, 'info');
+      });
+
+      // Submit Vote
+      document.getElementById('submit-vote-btn').addEventListener('click', () => {
+        const voter = state.voters.find(v => v.voterId === state.currentVoterId);
+        if (!voter) return;
+        if (voter.hasVoted) {
+          showToast('Already Voted', 'Each Voter ID can only submit one ballot.', 'warn');
+          return;
+        }
+        if (!state.selectedCandidateId) {
+          showToast('Select Candidate', 'Please select a candidate card before submitting.', 'warn');
+          return;
+        }
+        const enteredOtp = document.getElementById('voting-otp-input').value.trim();
+        if (!state.votingOtp || enteredOtp !== state.votingOtp) {
+          showToast('Voting OTP Required', 'Click "Get OTP for Voting" and enter the 6-digit code.', 'warn');
+          return;
+        }
+        const cand = state.candidates.find(c => c.id === state.selectedCandidateId);
+        if (!cand) return;
+        cand.votes += 1;
+        voter.hasVoted = true;
+        const receipt = genReceiptHash();
+        state.history.unshift({
+          voterId: voter.voterId,
+          ward: voter.ward,
+          election: cand.election,
+          receipt,
+          time: new Date().toLocaleTimeString()
+        });
+        state.votingOtp = null;
+        document.getElementById('voting-otp-input').value = '';
+        saveState();
+        renderVoterPortal();
+        showToast('Vote Cast Securely!', `Encrypted ballot recorded. Receipt: ${receipt}`, 'success');
+      });
+
+      // Admin: Create Candidate
+      document.getElementById('admin-cand-form').addEventListener('submit', e => {
+        e.preventDefault();
+        state.candidates.push({
+          id: 'C' + Date.now(),
+          name: document.getElementById('ac-name').value.trim(),
+          party: document.getElementById('ac-party').value.trim(),
+          election: document.getElementById('ac-election').value.trim(),
+          ward: document.getElementById('ac-ward').value,
+          bio: document.getElementById('ac-bio').value.trim() || 'Committed to transparent local governance.',
+          votes: 0
+        });
+        e.target.reset();
+        document.getElementById('ac-election').value = '2026 Municipal Council Election';
+        saveState();
+        renderAdmin();
+        showToast('Candidate Created', 'Candidate allocated to election & ward.', 'success');
+      });
+
+      // Admin: Create Voter
+      document.getElementById('admin-voter-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const vid = document.getElementById('av-id').value.trim().toUpperCase();
+        if (state.voters.some(v => v.voterId === vid)) {
+          showToast('Duplicate ID', `${vid} already exists in the voter roll.`, 'warn');
+          return;
+        }
+        state.voters.push({
+          voterId: vid,
+          name: document.getElementById('av-name').value.trim(),
+          phone: document.getElementById('av-phone').value.trim(),
+          ward: document.getElementById('av-ward').value,
+          hasVoted: false
+        });
+        e.target.reset();
+        saveState();
+        renderAdmin();
+        showToast('Voter Added', `${vid} added to voter roll.`, 'success');
+      });
+
+      // Admin: Import CSV
+      document.getElementById('load-sample-csv-btn').addEventListener('click', () => {
+        document.getElementById('import-csv-text').value =
+          'VOT-1006,Ananya Rao,Ward 1 - North,+91 90000 11111\nVOT-1007,Deepak Nair,Ward 2 - Central,+91 90000 22222\nVOT-1008,Sonal Gupta,Ward 3 - South,+91 90000 33333';
+      });
+      document.getElementById('import-csv-file').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => { document.getElementById('import-csv-text').value = ev.target.result; };
+        reader.readAsText(file);
+      });
+      document.getElementById('run-csv-import-btn').addEventListener('click', () => {
+        const raw = document.getElementById('import-csv-text').value.trim();
+        if (!raw) return;
+        let added = 0;
+        raw.split(/\r?\n/).forEach(line => {
+          const parts = line.split(',').map(s => s.trim());
+          if (parts.length >= 2 && parts[0] && !parts[0].toLowerCase().includes('voterid')) {
+            const vid = parts[0].toUpperCase();
+            if (!state.voters.some(v => v.voterId === vid)) {
+              state.voters.push({
+                voterId: vid,
+                name: parts[1],
+                ward: WARDS.includes(parts[2]) ? parts[2] : WARDS[0],
+                phone: parts[3] || '+91 90000 00000',
+                hasVoted: false
+              });
+              added++;
+            }
+          }
+        });
+        document.getElementById('import-csv-text').value = '';
+        saveState();
+        renderAdmin();
+        showToast('CSV Imported', `Added ${added} new voter(s) to the roll.`, 'success');
+      });
+
+      document.getElementById('admin-voter-search').addEventListener('input', renderAdmin);
+
+      renderVoterPortal();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

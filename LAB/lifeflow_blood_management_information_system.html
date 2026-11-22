@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeFlow — Blood Management Information System</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>body{font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a}</style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 font-bold text-lg text-slate-900">
+        <i data-lucide="droplets" class="w-5 h-5 text-rose-600"></i>
+        <span>LifeFlow BMIS</span>
+      </div>
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <button type="button" data-role="donor" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 text-white">Donor / User</button>
+        <button type="button" data-role="hospital" class="role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">Hospital</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- DONOR / USER -->
+    <section id="view-donor" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h2 class="text-base font-bold">Post Donor Information</h2>
+          <form id="donor-form" class="space-y-2.5">
+            <input id="d-name" type="text" required placeholder="Donor Full Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <div class="grid grid-cols-2 gap-2">
+              <select id="d-group" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+              </select>
+              <input id="d-city" type="text" required placeholder="City" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <input id="d-phone" type="tel" required placeholder="Contact Phone" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold">Save Donor Record</button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h2 class="text-base font-bold">Search Donors &amp; Blood Banks</h2>
+            <div class="flex gap-2">
+              <input id="search-q" type="text" placeholder="Search city or name..." class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs" />
+              <select id="search-grp" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+                <option value="All">All Groups</option><option>O+</option><option>O-</option><option>A+</option><option>B+</option><option>AB+</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Donor Directory</h3>
+              <div id="donor-list" class="space-y-2"></div>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Blood Bank Availability</h3>
+              <div id="bank-list" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOSPITAL -->
+    <section id="view-hospital" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h2 class="text-base font-bold">Post / Update Blood Bank Stock</h2>
+          <form id="bank-form" class="space-y-2.5">
+            <input id="hb-name" type="text" required placeholder="Hospital / Blood Bank Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <input id="hb-city" type="text" required placeholder="City" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <div class="grid grid-cols-2 gap-2">
+              <select id="hb-group" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option>O+</option><option>O-</option><option>A+</option><option>B+</option><option>AB+</option>
+              </select>
+              <input id="hb-units" type="number" min="0" required value="12" placeholder="Units" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold">Update Blood Group Status</button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h2 class="text-base font-bold mb-3">National Blood Stock Performance Report</h2>
+          <div class="relative h-64"><canvas id="blood-chart"></canvas></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-box" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+  <script>
+    let state = {
+      role: 'donor',
+      donors: [
+        { name: 'Vikramaditya S.', group: 'O+', city: 'Chennai', phone: '+91 98400 11122' },
+        { name: 'Priyanka Nair', group: 'A+', city: 'Kochi', phone: '+91 98400 33344' },
+        { name: 'Arjun Reddy', group: 'B+', city: 'Hyderabad', phone: '+91 98400 55566' }
+      ],
+      banks: [
+        { name: 'Apollo Central Blood Bank', city: 'Chennai', stock: { 'O+': 24, 'O-': 6, 'A+': 18, 'B+': 20, 'AB+': 9 } },
+        { name: 'St. John Medical Blood Center', city: 'Bengaluru', stock: { 'O+': 15, 'O-': 4, 'A+': 12, 'B+': 19, 'AB+': 7 } }
+      ]
+    };
+
+    try { const s = localStorage.getItem('lifeflow_v1'); if (s) state = { ...state, ...JSON.parse(s) }; } catch (e) {}
+    function save() { try { localStorage.setItem('lifeflow_v1', JSON.stringify(state)); } catch (e) {} }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function toast(msg) {
+      const el = document.createElement('div');
+      el.className = 'bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg';
+      el.textContent = msg;
+      document.getElementById('toast-box').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    let chart = null;
+    function render() {
+      document.getElementById('view-donor').classList.toggle('hidden', state.role !== 'donor');
+      document.getElementById('view-hospital').classList.toggle('hidden', state.role !== 'hospital');
+      document.querySelectorAll('.role-btn').forEach(b => {
+        b.className = b.dataset.role === state.role ? 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 text-white' : 'role-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600';
+      });
+
+      const q = (document.getElementById('search-q').value || '').toLowerCase();
+      const grp = document.getElementById('search-grp').value;
+
+      document.getElementById('donor-list').innerHTML = state.donors.filter(d =>
+        (!q || d.name.toLowerCase().includes(q) || d.city.toLowerCase().includes(q)) && (grp === 'All' || d.group === grp)
+      ).map(d => `
+        <div class="p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <div><p class="font-bold">${esc(d.name)}</p><p class="text-slate-500">${esc(d.city)} &bull; ${esc(d.phone)}</p></div>
+          <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold">${esc(d.group)}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('bank-list').innerHTML = state.banks.filter(b =>
+        !q || b.name.toLowerCase().includes(q) || b.city.toLowerCase().includes(q)
+      ).map(b => `
+        <div class="p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+          <p class="font-bold">${esc(b.name)} <span class="font-normal text-slate-500">(${esc(b.city)})</span></p>
+          <div class="flex flex-wrap gap-1.5">
+            ${Object.entries(b.stock).map(([g, u]) => `<span class="px-2 py-0.5 rounded bg-slate-100 font-semibold">${g}: ${u}u</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      if (state.role === 'hospital' && typeof Chart !== 'undefined') {
+        const groups = ['O+', 'O-', 'A+', 'B+', 'AB+'];
+        const totals = groups.map(g => state.banks.reduce((s, b) => s + (b.stock[g] || 0), 0));
+        const ctx = document.getElementById('blood-chart').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels: groups, datasets: [{ label: 'Total Units Available', data: totals, backgroundColor: '#e11d48', borderRadius: 6 }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.addEventListener('click', () => { state.role = b.dataset.role; render(); }));
+      document.getElementById('search-q').addEventListener('input', render);
+      document.getElementById('search-grp').addEventListener('change', render);
+      document.getElementById('donor-form').addEventListener('submit', e => {
+        e.preventDefault();
+        state.donors.unshift({
+          name: document.getElementById('d-name').value.trim(),
+          group: document.getElementById('d-group').value,
+          city: document.getElementById('d-city').value.trim(),
+          phone: document.getElementById('d-phone').value.trim()
+        });
+        e.target.reset(); save(); render(); toast('Donor record posted!');
+      });
+      document.getElementById('bank-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('hb-name').value.trim();
+        const city = document.getElementById('hb-city').value.trim();
+        const grp = document.getElementById('hb-group').value;
+        const units = Number(document.getElementById('hb-units').value);
+        let bank = state.banks.find(b => b.name.toLowerCase() === name.toLowerCase());
+        if (!bank) { bank = { name, city, stock: { 'O+': 0, 'O-': 0, 'A+': 0, 'B+': 0, 'AB+': 0 } }; state.banks.unshift(bank); }
+        bank.stock[grp] = units;
+        e.target.reset(); save(); render(); toast(`Updated ${grp} stock to ${units} units.`);
+      });
+      render();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComplainEase — Streamlined Grievance &amp; Complaint Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef4ff',
+              100: '#d9e6ff',
+              200: '#bcd4ff',
+              500: '#3b6ef5',
+              600: '#2554e0',
+              700: '#1d42b8',
+              900: '#172b6b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .tab-active {
+      color: #2554e0;
+      border-bottom: 2px solid #2554e0;
+      background-color: rgba(37, 84, 224, 0.05);
+    }
+    .fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-3">
+        <!-- Logo -->
+        <div class="flex items-center gap-2.5 shrink-0 cursor-pointer" id="brand-home-btn">
+          <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-lg font-bold tracking-tight text-slate-900">ComplainEase</span>
+            <span class="hidden sm:inline-block ml-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">Resolution Portal</span>
+          </div>
+        </div>
+
+        <!-- Desktop Nav -->
+        <nav class="hidden md:flex items-center gap-1 h-full" aria-label="Primary">
+          <button type="button" data-nav="submit" class="nav-btn h-full px-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors whitespace-nowrap">
+            <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+            <span>Submit Complaint</span>
+          </button>
+          <button type="button" data-nav="track" class="nav-btn h-full px-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors whitespace-nowrap">
+            <i data-lucide="radar" class="w-4 h-4"></i>
+            <span>Track &amp; History</span>
+          </button>
+          <button type="button" data-nav="kb" class="nav-btn h-full px-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors whitespace-nowrap">
+            <i data-lucide="book-open-check" class="w-4 h-4"></i>
+            <span>Common Issues</span>
+          </button>
+          <button type="button" data-nav="dashboard" class="nav-btn h-full px-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors whitespace-nowrap">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Team Dashboard</span>
+          </button>
+        </nav>
+
+        <!-- Right Controls -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <button type="button" id="notif-bell-btn" class="relative p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors" title="Recent Email & SMS Alerts">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="notif-dot" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+          </button>
+
+          <div id="auth-area" class="flex items-center gap-2"></div>
+
+          <button type="button" id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle Menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Nav Drawer -->
+      <div id="mobile-nav" class="hidden md:hidden pb-3 pt-1 border-t border-slate-100 space-y-1">
+        <button type="button" data-nav="submit" class="mobile-nav-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+          <i data-lucide="file-plus-2" class="w-4 h-4"></i> Submit Complaint
+        </button>
+        <button type="button" data-nav="track" class="mobile-nav-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+          <i data-lucide="radar" class="w-4 h-4"></i> Track &amp; History
+        </button>
+        <button type="button" data-nav="kb" class="mobile-nav-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+          <i data-lucide="book-open-check" class="w-4 h-4"></i> Common Issues
+        </button>
+        <button type="button" data-nav="dashboard" class="mobile-nav-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Team Dashboard
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- VIEW 1: SUBMIT COMPLAINT -->
+    <section id="view-submit" class="view-section fade-in space-y-6">
+      <!-- Hero Banner -->
+      <div class="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div class="max-w-2xl space-y-2">
+            <div class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider bg-white/15 px-2.5 py-1 rounded-full">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              Transparent &amp; Real-Time Grievance Handling
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Register a New Complaint</h1>
+            <p class="text-sm sm:text-base text-blue-100">
+              Submit your concern with supporting documents. Receive an instant tracking ID and automated status updates via Email or SMS.
+            </p>
+          </div>
+          <!-- Quick Lookup Box -->
+          <form id="hero-track-form" class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 w-full lg:w-80 shrink-0 space-y-2.5">
+            <label for="hero-track-input" class="block text-xs font-semibold uppercase tracking-wide text-blue-100">Already have a Tracking ID?</label>
+            <div class="flex gap-2">
+              <input id="hero-track-input" type="text" placeholder="e.g. CMP-2026-1042" class="w-full px-3 py-2 rounded-lg bg-white text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <button type="submit" class="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium shrink-0 transition-colors">
+                Track
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Complaint Form -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7">
+          <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">Complaint Details</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Fields marked with * are required for routing to the right resolution team.</p>
+            </div>
+            <span id="form-user-badge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">Submitting as Guest</span>
+          </div>
+
+          <form id="complaint-form" class="space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="c-category" class="block text-sm font-medium text-slate-700 mb-1.5">Category *</label>
+                <select id="c-category" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  <option value="">Select a category...</option>
+                  <option value="Billing & Payments">Billing &amp; Payments</option>
+                  <option value="Service Quality">Service Quality</option>
+                  <option value="Delivery & Logistics">Delivery &amp; Logistics</option>
+                  <option value="Technical & Portal">Technical &amp; Portal</option>
+                  <option value="Staff Conduct">Staff Conduct</option>
+                  <option value="Facilities & Safety">Facilities &amp; Safety</option>
+                </select>
+              </div>
+              <div>
+                <label for="c-priority" class="block text-sm font-medium text-slate-700 mb-1.5">Urgency / Priority *</label>
+                <select id="c-priority" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                  <option value="Low">Low — General feedback or minor issue</option>
+                  <option value="Medium" selected>Medium — Standard service disruption</option>
+                  <option value="High">High — Significant financial or service impact</option>
+                  <option value="Urgent">Urgent — Safety, compliance, or critical outage</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="c-title" class="block text-sm font-medium text-slate-700 mb-1.5">Complaint Subject *</label>
+              <input id="c-title" type="text" required maxlength="120" placeholder="Brief summary of the issue (e.g., Duplicate charge on October invoice)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="c-desc" class="block text-sm font-medium text-slate-700">Detailed Description *</label>
+                <span id="desc-char-count" class="text-xs text-slate-400">0 / 1000</span>
+              </div>
+              <textarea id="c-desc" rows="4" required maxlength="1000" placeholder="Include relevant dates, order/reference numbers, location, and what resolution you are seeking..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"></textarea>
+            </div>
+
+            <!-- Supporting Documents -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Supporting Documents (Receipts, Photos, PDFs)</label>
+              <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-xl p-5 text-center cursor-pointer transition-colors bg-slate-50/70">
+                <input id="c-files" type="file" multiple class="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt" />
+                <div class="flex flex-col items-center gap-1.5">
+                  <div class="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                  </div>
+                  <p class="text-sm font-medium text-slate-700">Click to attach files or drag and drop</p>
+                  <p class="text-xs text-slate-500">PDF, PNG, JPG, DOC up to 10MB each</p>
+                </div>
+              </div>
+              <ul id="file-preview-list" class="mt-2.5 space-y-1.5"></ul>
+            </div>
+
+            <!-- Contact & Notification Preferences -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+              <h3 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <i data-lucide="bell-ring" class="w-4 h-4 text-brand-600"></i>
+                Real-Time Status Updates
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="c-email" class="block text-xs font-medium text-slate-600 mb-1">Email Address *</label>
+                  <input id="c-email" type="email" required placeholder="you@example.com" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label for="c-phone" class="block text-xs font-medium text-slate-600 mb-1">Mobile Number (for SMS)</label>
+                  <input id="c-phone" type="tel" placeholder="+1 (555) 234-5678" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-4 pt-1">
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input id="c-notify-email" type="checkbox" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500" />
+                  <span>Email notifications</span>
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input id="c-notify-sms" type="checkbox" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500" />
+                  <span>SMS alerts</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
+                Your submission is encrypted and assigned a unique tracking ID.
+              </p>
+              <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-sm transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                Submit Complaint
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right Sidebar: SLA & Common Tips -->
+        <aside class="space-y-5">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <h3 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <i data-lucide="clock" class="w-4 h-4 text-brand-600"></i>
+              How ComplainEase Works
+            </h3>
+            <ol class="space-y-3 text-sm">
+              <li class="flex gap-3">
+                <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 font-semibold text-xs flex items-center justify-center shrink-0">1</span>
+                <div>
+                  <p class="font-medium text-slate-800">Instant Registration</p>
+                  <p class="text-xs text-slate-500">Receive a unique ID (e.g. CMP-2026-XXXX) immediately upon submission.</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 font-semibold text-xs flex items-center justify-center shrink-0">2</span>
+                <div>
+                  <p class="font-medium text-slate-800">Automated Triage</p>
+                  <p class="text-xs text-slate-500">Your case is routed to the specialized resolution team within 2 hours.</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 font-semibold text-xs flex items-center justify-center shrink-0">3</span>
+                <div>
+                  <p class="font-medium text-slate-800">Two-Way Collaboration</p>
+                  <p class="text-xs text-slate-500">Receive team feedback and upload additional evidence anytime.</p>
+                </div>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-xs flex items-center justify-center shrink-0">4</span>
+                <div>
+                  <p class="font-medium text-slate-800">Verified Resolution</p>
+                  <p class="text-xs text-slate-500">Get notified via Email &amp; SMS when your complaint is resolved.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-2.5">
+            <h3 class="text-sm font-semibold text-amber-900 flex items-center gap-2">
+              <i data-lucide="lightbulb" class="w-4 h-4 text-amber-600"></i>
+              Looking for a quick fix?
+            </h3>
+            <p class="text-xs text-amber-800 leading-relaxed">
+              Many billing, refund, and login issues can be resolved in under 2 minutes using our self-service solutions.
+            </p>
+            <button type="button" id="sidebar-kb-btn" class="text-xs font-semibold text-amber-900 underline hover:text-amber-700">
+              Browse Common Issues &amp; Solutions &rarr;
+            </button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- VIEW 2: TRACK & HISTORY -->
+    <section id="view-track" class="view-section hidden fade-in space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Real-Time Tracking &amp; History</h1>
+          <p class="text-sm text-slate-500">Monitor live complaint progress, review team feedback, or submit additional evidence.</p>
+        </div>
+        <button type="button" id="track-new-btn" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium inline-flex items-center gap-2 self-start sm:self-auto">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          New Complaint
+        </button>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row gap-3">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input id="track-search" type="text" placeholder="Search by Tracking ID (e.g. CMP-2026-1042), subject, or keyword..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <select id="track-status-filter" class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="All">All Statuses</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Under Review">Under Review</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Awaiting Info">Awaiting Info</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <select id="track-category-filter" class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="All">All Categories</option>
+          <option value="Billing & Payments">Billing &amp; Payments</option>
+          <option value="Service Quality">Service Quality</option>
+          <option value="Delivery & Logistics">Delivery &amp; Logistics</option>
+          <option value="Technical & Portal">Technical &amp; Portal</option>
+          <option value="Staff Conduct">Staff Conduct</option>
+          <option value="Facilities & Safety">Facilities &amp; Safety</option>
+        </select>
+      </div>
+
+      <!-- Complaints List -->
+      <div id="track-list" class="grid grid-cols-1 gap-4"></div>
+    </section>
+
+    <!-- VIEW 3: KNOWLEDGE BASE (COMMON ISSUES & SOLUTIONS) -->
+    <section id="view-kb" class="view-section hidden fade-in space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Common Issues &amp; Solutions</h1>
+        <p class="text-sm text-slate-500 max-w-xl mx-auto">Search verified troubleshooting guides, refund timelines, and policy answers before filing a complaint.</p>
+        <div class="max-w-xl mx-auto relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+          <input id="kb-search" type="text" placeholder="Search issues (e.g., refund, duplicate charge, password, damaged)..." class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xs" />
+        </div>
+        <div id="kb-category-pills" class="flex flex-wrap justify-center gap-2 pt-1"></div>
+      </div>
+
+      <div id="kb-results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- VIEW 4: TEAM DASHBOARD -->
+    <section id="view-dashboard" class="view-section hidden fade-in space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Resolution Team Dashboard</h1>
+          <p class="text-sm text-slate-500">Manage incoming grievances, update case statuses, and send feedback to users.</p>
+        </div>
+        <div class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Live Queue Synced
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Complaints</p>
+          <p id="kpi-total" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Active / Open</p>
+          <p id="kpi-open" class="text-2xl sm:text-3xl font-bold text-amber-600 mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Resolved</p>
+          <p id="kpi-resolved" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Resolution Rate</p>
+          <p id="kpi-rate" class="text-2xl sm:text-3xl font-bold text-brand-600 mt-1">0%</p>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">Complaints by Status</h3>
+          <div class="relative h-64">
+            <canvas id="status-chart"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h3 class="text-sm font-semibold text-slate-800 mb-3">Complaints by Category</h3>
+          <div class="relative h-64">
+            <canvas id="category-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Management Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 class="text-base font-semibold text-slate-900">Active Grievance Queue</h3>
+          <select id="dash-filter" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <option value="All">All Cases</option>
+            <option value="Open">Open Only</option>
+            <option value="Urgent">Urgent / High Priority</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <th class="py-3 px-4">ID &amp; Subject</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Priority</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dash-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p>&copy; 2026 ComplainEase Platform. Built for transparent, responsive grievance resolution.</p>
+      <p>Automated Email &amp; SMS alerts active &bull; 24/7 Self-Service Tracking</p>
+    </div>
+  </footer>
+
+  <!-- MODAL: COMPLAINT DETAIL, TRACKING TIMELINE & ADDITIONAL EVIDENCE -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="modal-id" class="text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700"></span>
+            <span id="modal-status-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full"></span>
+            <span id="modal-priority-badge" class="text-xs font-medium px-2 py-0.5 rounded-full"></span>
+          </div>
+          <h2 id="modal-title" class="text-lg font-bold text-slate-900 mt-1 truncate"></h2>
+        </div>
+        <button type="button" id="close-detail-modal" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        <!-- Real-Time Stepper -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Live Resolution Progress</p>
+          <div id="modal-stepper" class="grid grid-cols-4 gap-2"></div>
+        </div>
+
+        <!-- Description & Metadata -->
+        <div class="space-y-3">
+          <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
+            <span><strong>Category:</strong> <span id="modal-category" class="text-slate-700"></span></span>
+            <span><strong>Submitted By:</strong> <span id="modal-submitter" class="text-slate-700"></span></span>
+            <span><strong>Alerts:</strong> <span id="modal-alerts" class="text-slate-700"></span></span>
+            <span><strong>Created:</strong> <span id="modal-date" class="text-slate-700"></span></span>
+          </div>
+          <p id="modal-desc" class="text-sm text-slate-700 leading-relaxed bg-white border border-slate-200 rounded-xl p-4"></p>
+        </div>
+
+        <!-- Attached Documents -->
+        <div>
+          <h3 class="text-sm font-semibold text-slate-800 mb-2">Supporting Documents</h3>
+          <ul id="modal-docs" class="flex flex-wrap gap-2"></ul>
+        </div>
+
+        <!-- Resolution Team Feedback & Thread -->
+        <div>
+          <h3 class="text-sm font-semibold text-slate-800 mb-2.5">Resolution Updates &amp; Feedback</h3>
+          <div id="modal-thread" class="space-y-3"></div>
+        </div>
+
+        <!-- Provide Additional Information / Evidence Form -->
+        <form id="followup-form" class="bg-brand-50/60 border border-brand-100 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-semibold text-slate-900">Provide Additional Information or Evidence</h4>
+            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <input id="followup-as-team" type="checkbox" class="rounded text-brand-600" />
+              <span>Post as Resolution Team</span>
+            </label>
+          </div>
+          <textarea id="followup-text" rows="2" required placeholder="Add clarification, respond to team feedback, or note new details..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <label class="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-brand-700">
+              <i data-lucide="paperclip" class="w-4 h-4"></i>
+              <span id="followup-file-label">Attach extra document (optional)</span>
+              <input id="followup-file" type="file" class="hidden" />
+            </label>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition-colors">
+              Send Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AUTHENTICATION (LOGIN / REGISTER) -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900">Account Access</h2>
+        <button type="button" id="close-auth-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-5">
+        <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl">
+          <button type="button" id="auth-tab-login" class="py-2 text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-xs">Sign In</button>
+          <button type="button" id="auth-tab-register" class="py-2 text-sm font-semibold rounded-lg text-slate-600">Register</button>
+        </div>
+
+        <form id="auth-form" class="space-y-3.5">
+          <div id="auth-name-wrap" class="hidden">
+            <label for="auth-name" class="block text-xs font-medium text-slate-700 mb-1">Full Name</label>
+            <input id="auth-name" type="text" placeholder="Alex Rivera" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <div>
+            <label for="auth-email" class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+            <input id="auth-email" type="email" required placeholder="alex@example.com" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <div id="auth-phone-wrap" class="hidden">
+            <label for="auth-phone" class="block text-xs font-medium text-slate-700 mb-1">Mobile Number (SMS Alerts)</label>
+            <input id="auth-phone" type="tel" placeholder="+1 (555) 234-5678" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <div>
+            <label for="auth-password" class="block text-xs font-medium text-slate-700 mb-1">Password</label>
+            <input id="auth-password" type="password" required placeholder="••••••••" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <button type="submit" id="auth-submit-btn" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-colors">
+            Sign In
+          </button>
+        </form>
+
+        <div class="border-t border-slate-100 pt-4 space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Quick Demo Sign-In</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="demo-citizen-btn" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-700 text-left">
+              Alex Rivera<br><span class="text-[11px] text-slate-400">Citizen User</span>
+            </button>
+            <button type="button" id="demo-agent-btn" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-700 text-left">
+              Priya Nair<br><span class="text-[11px] text-slate-400">Resolution Team</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOTIFICATIONS LOG -->
+  <div id="notif-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="mail-check" class="w-4 h-4 text-brand-600"></i>
+          Email &amp; SMS Alert Log
+        </h2>
+        <button type="button" id="close-notif-modal" class="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="notif-log-list" class="p-5 max-h-80 overflow-y-auto space-y-2.5 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <script>
+    // ---------- INITIAL DATA & STATE ----------
+    const STORAGE_KEY = 'complainease_state_v1';
+
+    const SEED_COMPLAINTS = [
+      {
+        id: 'CMP-2026-1042',
+        title: 'Duplicate billing charge on October utility statement',
+        category: 'Billing & Payments',
+        priority: 'High',
+        status: 'In Progress',
+        submitterName: 'Alex Rivera',
+        submitterEmail: 'alex.rivera@example.com',
+        submitterPhone: '+1 (555) 234-5678',
+        notifyEmail: true,
+        notifySms: true,
+        createdAt: '2026-11-18 09:40',
+        description: 'My account was debited twice for invoice #INV-8834 ($142.50 each) on November 16. I have attached both bank transaction receipts.',
+        documents: ['bank_statement_nov.pdf', 'invoice_8834.png'],
+        updates: [
+          { author: 'System', role: 'system', time: '2026-11-18 09:40', message: 'Complaint registered. Confirmation sent via Email & SMS.' },
+          { author: 'Priya Nair (Billing Resolution)', role: 'team', time: '2026-11-19 11:15', message: 'We verified the duplicate authorization. Refund batch #RF-409 has been initiated and should settle within 3-5 business days.' }
+        ]
+      },
+      {
+        id: 'CMP-2026-1038',
+        title: 'Delayed parcel delivery & missing tracking scan',
+        category: 'Delivery & Logistics',
+        priority: 'Medium',
+        status: 'Awaiting Info',
+        submitterName: 'Alex Rivera',
+        submitterEmail: 'alex.rivera@example.com',
+        submitterPhone: '+1 (555) 234-5678',
+        notifyEmail: true,
+        notifySms: false,
+        createdAt: '2026-11-15 16:20',
+        description: 'Order #ORD-55210 was scheduled for delivery on Nov 12, but tracking has remained stuck at the regional hub.',
+        documents: ['order_confirmation.pdf'],
+        updates: [
+          { author: 'System', role: 'system', time: '2026-11-15 16:20', message: 'Complaint registered and routed to Logistics Support.' },
+          { author: 'Marcus Vance (Logistics Team)', role: 'team', time: '2026-11-16 14:05', message: 'Please confirm if your delivery gate requires an access code so our courier can re-attempt tomorrow.' }
+        ]
+      },
+      {
+        id: 'CMP-2026-1029',
+        title: 'Two-factor SMS verification code not arriving on login',
+        category: 'Technical & Portal',
+        priority: 'Urgent',
+        status: 'Resolved',
+        submitterName: 'Jordan Lee',
+        submitterEmail: 'jordan.lee@example.com',
+        submitterPhone: '+1 (555) 890-1122',
+        notifyEmail: true,
+        notifySms: true,
+        createdAt: '2026-11-10 08:12',
+        description: 'Unable to access my account dashboard because 2FA SMS codes time out after 10 minutes.',
+        documents: ['login_error_screenshot.png'],
+        updates: [
+          { author: 'System', role: 'system', time: '2026-11-10 08:12', message: 'Urgent ticket created.' },
+          { author: 'DevOps Support', role: 'team', time: '2026-11-10 10:02', message: 'SMS gateway carrier routing was refreshed for your number. Tested and confirmed working.' }
+        ]
+      },
+      {
+        id: 'CMP-2026-1019',
+        title: 'Streetlight outage near Elm & 4th intersection',
+        category: 'Facilities & Safety',
+        priority: 'High',
+        status: 'Under Review',
+        submitterName: 'Samira Patel',
+        submitterEmail: 'samira.p@example.com',
+        submitterPhone: '+1 (555) 441-7780',
+        notifyEmail: true,
+        notifySms: true,
+        createdAt: '2026-11-20 19:05',
+        description: 'Three consecutive streetlights on the north side of Elm St have been out for 4 nights, creating a pedestrian hazard.',
+        documents: ['elm_st_night_photo.jpg'],
+        updates: [
+          { author: 'System', role: 'system', time: '2026-11-20 19:05', message: 'Complaint registered. Assigned to Public Facilities.' }
+        ]
+      }
+    ];
+
+    const KB_ARTICLES = [
+      {
+        id: 'kb-1',
+        category: 'Billing & Payments',
+        title: 'Duplicate or Pending Charges on Your Statement',
+        summary: 'Pending authorizations automatically drop off within 3–5 business days. If two posted charges appear, submit your invoice and bank receipt.',
+        steps: ['Check if one transaction is marked "Pending" in your banking app.', 'Wait 72 hours for temporary holds to release automatically.', 'If both charges are posted, file under Billing & Payments with a PDF screenshot.'],
+        helpfulCount: 42
+      },
+      {
+        id: 'kb-2',
+        category: 'Delivery & Logistics',
+        title: 'Tracking Stuck at Regional Hub for Over 48 Hours',
+        summary: 'Weather or address verification holds can pause scans. Confirming gate codes or landmark instructions speeds up re-dispatch.',
+        steps: ['Verify your shipping address and phone number in Account settings.', 'Check if a delivery attempt notice was emailed.', 'Provide gate/access details via the Track & History follow-up box.'],
+        helpfulCount: 31
+      },
+      {
+        id: 'kb-3',
+        category: 'Technical & Portal',
+        title: 'Not Receiving 2FA SMS Verification Codes',
+        summary: 'Carrier short-code blocks or Do Not Disturb filters can delay OTP messages.',
+        steps: ['Ensure short-code SMS is enabled with your mobile carrier.', 'Wait 60 seconds before requesting a new code to avoid rate limits.', 'Use Email fallback or file a Technical & Portal ticket for gateway reset.'],
+        helpfulCount: 27
+      },
+      {
+        id: 'kb-4',
+        category: 'Service Quality',
+        title: 'How Long Does Complaint Resolution Take?',
+        summary: 'Standard complaints are reviewed within 24 hours and resolved within 3–5 business days depending on complexity.',
+        steps: ['Urgent safety or outage issues are triaged within 2 hours.', 'Enable both Email and SMS alerts for instant status-change notifications.', 'Add supporting documents early to prevent "Awaiting Info" delays.'],
+        helpfulCount: 54
+      }
+    ];
+
+    let state = {
+      currentView: 'submit',
+      user: null,
+      authMode: 'login',
+      complaints: [...SEED_COMPLAINTS],
+      pendingFiles: [],
+      kbCategory: 'All',
+      activeDetailId: null,
+      notifications: [
+        { time: '2026-11-19 11:15', channel: 'Email & SMS', text: 'CMP-2026-1042 moved to In Progress — Refund batch #RF-409 initiated.' },
+        { time: '2026-11-16 14:05', channel: 'Email', text: 'CMP-2026-1038 needs additional info: delivery gate code requested.' }
+      ],
+      helpfulVotes: {}
+    };
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.complaints) && parsed.complaints.length > 0) {
+          state.complaints = parsed.complaints;
+        }
+        if (parsed.user) state.user = parsed.user;
+        if (Array.isArray(parsed.notifications)) state.notifications = parsed.notifications;
+        if (parsed.helpfulVotes) state.helpfulVotes = parsed.helpfulVotes;
+      }
+    } catch (e) {}
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          complaints: state.complaints,
+          user: state.user,
+          notifications: state.notifications,
+          helpfulVotes: state.helpfulVotes
+        }));
+      } catch (e) {}
+    }
+
+    // ---------- HELPERS ----------
+    function nowStamp() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function statusBadgeClass(status) {
+      switch (status) {
+        case 'Submitted': return 'bg-slate-100 text-slate-700';
+        case 'Under Review': return 'bg-indigo-50 text-indigo-700';
+        case 'In Progress': return 'bg-blue-50 text-blue-700';
+        case 'Awaiting Info': return 'bg-amber-50 text-amber-700';
+        case 'Resolved': return 'bg-emerald-50 text-emerald-700';
+        default: return 'bg-slate-100 text-slate-700';
+      }
+    }
+
+    function priorityBadgeClass(priority) {
+      switch (priority) {
+        case 'Urgent': return 'bg-rose-50 text-rose-700 border border-rose-200';
+        case 'High': return 'bg-orange-50 text-orange-700 border border-orange-200';
+        case 'Medium': return 'bg-sky-50 text-sky-700 border border-sky-200';
+        default: return 'bg-slate-50 text-slate-600 border border-slate-200';
+      }
+    }
+
+    function showToast(title, message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = type === 'success'
+        ? 'bg-emerald-900 text-white border-emerald-700'
+        : type === 'warning'
+        ? 'bg-amber-900 text-white border-amber-700'
+        : 'bg-slate-900 text-white border-slate-700';
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto rounded-xl border p-3.5 shadow-lg fade-in ${colors}`;
+      el.innerHTML = `<p class="text-xs font-bold">${escapeHtml(title)}</p><p class="text-xs opacity-90 mt-0.5">${escapeHtml(message)}</p>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.remove();
+      }, 4500);
+    }
+
+    function logNotification(channel, text) {
+      state.notifications.unshift({ time: nowStamp(), channel, text });
+      if (state.notifications.length > 20) state.notifications.pop();
+      saveState();
+    }
+
+    // ---------- NAVIGATION ----------
+    function switchView(view) {
+      state.currentView = view;
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+      const target = document.getElementById(`view-${view}`);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('tab-active', btn.dataset.nav === view);
+      });
+      document.getElementById('mobile-nav').classList.add('hidden');
+
+      if (view === 'track') renderTrackList();
+      if (view === 'kb') renderKB();
+      if (view === 'dashboard') renderDashboard();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // ---------- AUTH RENDERING ----------
+    function renderAuth() {
+      const area = document.getElementById('auth-area');
+      const formBadge = document.getElementById('form-user-badge');
+      if (state.user) {
+        area.innerHTML = `
+          <div class="flex items-center gap-2">
+            <div class="hidden sm:block text-right leading-tight">
+              <p class="text-xs font-semibold text-slate-900">${escapeHtml(state.user.name)}</p>
+              <p class="text-[11px] text-slate-500">${escapeHtml(state.user.role)}</p>
+            </div>
+            <button type="button" id="logout-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-xs font-medium text-slate-700">Sign Out</button>
+          </div>
+        `;
+        document.getElementById('logout-btn').addEventListener('click', () => {
+          state.user = null;
+          saveState();
+          renderAuth();
+          showToast('Signed Out', 'You are now browsing as a guest.');
+        });
+        formBadge.textContent = `Signed in as ${state.user.name}`;
+        formBadge.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-brand-50 text-brand-700';
+        const emailInput = document.getElementById('c-email');
+        const phoneInput = document.getElementById('c-phone');
+        if (emailInput && !emailInput.value) emailInput.value = state.user.email || '';
+        if (phoneInput && !phoneInput.value) phoneInput.value = state.user.phone || '';
+      } else {
+        area.innerHTML = `
+          <button type="button" id="open-auth-btn" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors">
+            Sign In / Register
+          </button>
+        `;
+        document.getElementById('open-auth-btn').addEventListener('click', () => openAuthModal('login'));
+        formBadge.textContent = 'Submitting as Guest';
+        formBadge.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700';
+      }
+    }
+
+    function openAuthModal(mode = 'login') {
+      state.authMode = mode;
+      const isReg = mode === 'register';
+      document.getElementById('auth-name-wrap').classList.toggle('hidden', !isReg);
+      document.getElementById('auth-phone-wrap').classList.toggle('hidden', !isReg);
+      document.getElementById('auth-submit-btn').textContent = isReg ? 'Create Account' : 'Sign In';
+      document.getElementById('auth-tab-login').className = !isReg
+        ? 'py-2 text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-xs'
+        : 'py-2 text-sm font-semibold rounded-lg text-slate-600';
+      document.getElementById('auth-tab-register').className = isReg
+        ? 'py-2 text-sm font-semibold rounded-lg bg-white text-slate-900 shadow-xs'
+        : 'py-2 text-sm font-semibold rounded-lg text-slate-600';
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    // ---------- FILE UPLOAD PREVIEW ----------
+    function renderPendingFiles() {
+      const list = document.getElementById('file-preview-list');
+      list.innerHTML = '';
+      state.pendingFiles.forEach((fileName, idx) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100 text-xs text-slate-700';
+        li.innerHTML = `
+          <span class="truncate font-medium">${escapeHtml(fileName)}</span>
+          <button type="button" data-remove-file="${idx}" class="text-slate-400 hover:text-rose-600 ml-2 font-semibold">Remove</button>
+        `;
+        list.appendChild(li);
+      });
+      list.querySelectorAll('[data-remove-file]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.pendingFiles.splice(Number(btn.dataset.removeFile), 1);
+          renderPendingFiles();
+        });
+      });
+    }
+
+    // ---------- TRACK & HISTORY ----------
+    function renderTrackList() {
+      const q = (document.getElementById('track-search').value || '').trim().toLowerCase();
+      const statusF = document.getElementById('track-status-filter').value;
+      const catF = document.getElementById('track-category-filter').value;
+
+      const filtered = state.complaints.filter(c => {
+        const matchQ = !q || c.id.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q);
+        const matchS = statusF === 'All' || c.status === statusF;
+        const matchC = catF === 'All' || c.category === catF;
+        return matchQ && matchS && matchC;
+      });
+
+      const container = document.getElementById('track-list');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500">
+            <p class="font-semibold text-slate-700">No matching complaints found</p>
+            <p class="text-xs mt-1">Try clearing your filters or search with another Tracking ID.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(c => `
+        <div class="bg-white rounded-2xl border border-slate-200 hover:border-brand-300 p-5 shadow-sm transition-colors">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800">${escapeHtml(c.id)}</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusBadgeClass(c.status)}">${escapeHtml(c.status)}</span>
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full ${priorityBadgeClass(c.priority)}">${escapeHtml(c.priority)}</span>
+                <span class="text-xs text-slate-400">&bull; ${escapeHtml(c.createdAt)}</span>
+              </div>
+              <h3 class="text-base font-semibold text-slate-900 truncate">${escapeHtml(c.title)}</h3>
+              <p class="text-xs text-slate-500">${escapeHtml(c.category)} &bull; ${c.updates.length} update(s) &bull; ${c.documents.length} attachment(s)</p>
+            </div>
+            <button type="button" data-open-detail="${escapeHtml(c.id)}" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-brand-600 text-white text-xs font-semibold shrink-0 transition-colors self-start sm:self-center">
+              Track &amp; Respond
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('[data-open-detail]').forEach(btn => {
+        btn.addEventListener('click', () => openDetailModal(btn.dataset.openDetail));
+      });
+    }
+
+    // ---------- DETAIL MODAL ----------
+    function openDetailModal(id) {
+      const c = state.complaints.find(item => item.id === id);
+      if (!c) return;
+      state.activeDetailId = id;
+
+      document.getElementById('modal-id').textContent = c.id;
+      const stBadge = document.getElementById('modal-status-badge');
+      stBadge.textContent = c.status;
+      stBadge.className = `text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusBadgeClass(c.status)}`;
+
+      const prBadge = document.getElementById('modal-priority-badge');
+      prBadge.textContent = `${c.priority} Priority`;
+      prBadge.className = `text-xs font-medium px-2 py-0.5 rounded-full ${priorityBadgeClass(c.priority)}`;
+
+      document.getElementById('modal-title').textContent = c.title;
+      document.getElementById('modal-category').textContent = c.category;
+      document.getElementById('modal-submitter').textContent = `${c.submitterName} (${c.submitterEmail})`;
+      const channels = [c.notifyEmail ? 'Email' : null, c.notifySms ? 'SMS' : null].filter(Boolean).join(' & ') || 'None';
+      document.getElementById('modal-alerts').textContent = channels;
+      document.getElementById('modal-date').textContent = c.createdAt;
+      document.getElementById('modal-desc').textContent = c.description;
+
+      // Stepper
+      const steps = ['Submitted', 'Under Review', 'In Progress', 'Resolved'];
+      const currentIdx = c.status === 'Awaiting Info' ? 2 : Math.max(0, steps.indexOf(c.status));
+      document.getElementById('modal-stepper').innerHTML = steps.map((step, i) => {
+        const done = i <= currentIdx;
+        return `
+          <div class="flex flex-col items-center text-center">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${done ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'}">${i + 1}</div>
+            <span class="text-[11px] mt-1 font-medium ${done ? 'text-slate-900' : 'text-slate-400'}">${step}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Docs
+      const docsEl = document.getElementById('modal-docs');
+      docsEl.innerHTML = c.documents.length
+        ? c.documents.map(doc => `<li class="px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 flex items-center gap-1.5"><i data-lucide="file-text" class="w-3.5 h-3.5 text-brand-600"></i>${escapeHtml(doc)}</li>`).join('')
+        : '<li class="text-xs text-slate-400">No documents attached.</li>';
+
+      // Thread
+      document.getElementById('modal-thread').innerHTML = c.updates.map(u => {
+        const isTeam = u.role === 'team';
+        const isSys = u.role === 'system';
+        const boxClass = isTeam
+          ? 'bg-brand-50 border-brand-200'
+          : isSys
+          ? 'bg-slate-50 border-slate-200'
+          : 'bg-emerald-50/60 border-emerald-200';
+        return `
+          <div class="rounded-xl border p-3.5 ${boxClass}">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-semibold text-slate-900">${escapeHtml(u.author)}</span>
+              <span class="text-slate-400">${escapeHtml(u.time)}</span>
+            </div>
+            <p class="text-sm text-slate-700">${escapeHtml(u.message)}</p>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('followup-as-team').checked = state.user?.role === 'Resolution Team';
+      document.getElementById('detail-modal').classList.remove('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // ---------- KNOWLEDGE BASE ----------
+    function renderKB() {
+      const categories = ['All', ...new Set(KB_ARTICLES.map(a => a.category))];
+      const pillsEl = document.getElementById('kb-category-pills');
+      pillsEl.innerHTML = categories.map(cat => `
+        <button type="button" data-kb-cat="${escapeHtml(cat)}" class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${state.kbCategory === cat ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+          ${escapeHtml(cat)}
+        </button>
+      `).join('');
+      pillsEl.querySelectorAll('[data-kb-cat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.kbCategory = btn.dataset.kbCat;
+          renderKB();
+        });
+      });
+
+      const q = (document.getElementById('kb-search').value || '').trim().toLowerCase();
+      const filtered = KB_ARTICLES.filter(a => {
+        const matchCat = state.kbCategory === 'All' || a.category === state.kbCategory;
+        const matchQ = !q || a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q) || a.steps.some(s => s.toLowerCase().includes(q));
+        return matchCat && matchQ;
+      });
+
+      const resultsEl = document.getElementById('kb-results');
+      if (filtered.length === 0) {
+        resultsEl.innerHTML = `<div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">No matching guides found. Try submitting a complaint directly.</div>`;
+        return;
+      }
+
+      resultsEl.innerHTML = filtered.map(a => {
+        const voted = !!state.helpfulVotes[a.id];
+        const count = a.helpfulCount + (voted ? 1 : 0);
+        return `
+          <article class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="space-y-2.5">
+              <span class="inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-700">${escapeHtml(a.category)}</span>
+              <h3 class="text-base font-bold text-slate-900">${escapeHtml(a.title)}</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(a.summary)}</p>
+              <ul class="space-y-1 pt-1">
+                ${a.steps.map(s => `<li class="text-xs text-slate-700 flex items-start gap-2"><span class="text-brand-600 font-bold">&bull;</span><span>${escapeHtml(s)}</span></li>`).join('')}
+              </ul>
+            </div>
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              <button type="button" data-kb-vote="${a.id}" class="text-xs font-medium px-2.5 py-1 rounded-lg border ${voted ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}">
+                Helpful (${count})
+              </button>
+              <button type="button" data-kb-file="${escapeHtml(a.category)}" class="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                Still need help? File Complaint &rarr;
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      resultsEl.querySelectorAll('[data-kb-vote]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.kbVote;
+          state.helpfulVotes[id] = !state.helpfulVotes[id];
+          saveState();
+          renderKB();
+        });
+      });
+
+      resultsEl.querySelectorAll('[data-kb-file]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('c-category').value = btn.dataset.kbFile;
+          switchView('submit');
+        });
+      });
+    }
+
+    // ---------- TEAM DASHBOARD & CHARTS ----------
+    let statusChartInstance = null;
+    let categoryChartInstance = null;
+
+    function renderDashboard() {
+      const total = state.complaints.length;
+      const resolved = state.complaints.filter(c => c.status === 'Resolved').length;
+      const open = total - resolved;
+      const rate = total ? Math.round((resolved / total) * 100) : 0;
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-open').textContent = open;
+      document.getElementById('kpi-resolved').textContent = resolved;
+      document.getElementById('kpi-rate').textContent = `${rate}%`;
+
+      // Status Chart
+      const statuses = ['Submitted', 'Under Review', 'In Progress', 'Awaiting Info', 'Resolved'];
+      const statusCounts = statuses.map(s => state.complaints.filter(c => c.status === s).length);
+
+      if (typeof Chart !== 'undefined') {
+        const sCtx = document.getElementById('status-chart').getContext('2d');
+        if (statusChartInstance) statusChartInstance.destroy();
+        statusChartInstance = new Chart(sCtx, {
+          type: 'doughnut',
+          data: {
+            labels: statuses,
+            datasets: [{
+              data: statusCounts,
+              backgroundColor: ['#94a3b8', '#6366f1', '#3b82f6', '#f59e0b', '#10b981'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
+          }
+        });
+
+        const cats = ['Billing & Payments', 'Service Quality', 'Delivery & Logistics', 'Technical & Portal', 'Staff Conduct', 'Facilities & Safety'];
+        const catCounts = cats.map(cat => state.complaints.filter(c => c.category === cat).length);
+        const cCtx = document.getElementById('category-chart').getContext('2d');
+        if (categoryChartInstance) categoryChartInstance.destroy();
+        categoryChartInstance = new Chart(cCtx, {
+          type: 'bar',
+          data: {
+            labels: cats.map(c => c.split(' & ')[0]),
+            datasets: [{
+              label: 'Complaints',
+              data: catCounts,
+              backgroundColor: '#2554e0',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      }
+
+      // Table
+      const filterVal = document.getElementById('dash-filter').value;
+      const rows = state.complaints.filter(c => {
+        if (filterVal === 'Open') return c.status !== 'Resolved';
+        if (filterVal === 'Urgent') return c.priority === 'Urgent' || c.priority === 'High';
+        if (filterVal === 'Resolved') return c.status === 'Resolved';
+        return true;
+      });
+
+      const tbody = document.getElementById('dash-table-body');
+      tbody.innerHTML = rows.map(c => `
+        <tr class="hover:bg-slate-50/70">
+          <td class="py-3.5 px-4">
+            <p class="font-semibold text-slate-900">${escapeHtml(c.id)}</p>
+            <p class="text-xs text-slate-500 max-w-xs truncate">${escapeHtml(c.title)}</p>
+          </td>
+          <td class="py-3.5 px-4 text-xs text-slate-600">${escapeHtml(c.category)}</td>
+          <td class="py-3.5 px-4"><span class="text-xs font-medium px-2 py-0.5 rounded-full ${priorityBadgeClass(c.priority)}">${escapeHtml(c.priority)}</span></td>
+          <td class="py-3.5 px-4">
+            <select data-dash-status="${escapeHtml(c.id)}" class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium bg-white">
+              ${statuses.map(s => `<option value="${s}" ${c.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td class="py-3.5 px-4 text-right">
+            <button type="button" data-dash-open="${escapeHtml(c.id)}" class="px-3 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold">
+              Respond
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('[data-dash-status]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const item = state.complaints.find(x => x.id === sel.dataset.dashStatus);
+          if (!item) return;
+          item.status = sel.value;
+          item.updates.push({
+            author: 'System',
+            role: 'system',
+            time: nowStamp(),
+            message: `Status updated to "${sel.value}". Notification dispatched to ${item.submitterEmail}.`
+          });
+          logNotification(item.notifySms ? 'Email & SMS' : 'Email', `${item.id} status changed to ${sel.value}.`);
+          saveState();
+          renderDashboard();
+          showToast('Status Updated', `${item.id} marked as ${sel.value}. Email/SMS alert sent.`, 'success');
+        });
+      });
+
+      tbody.querySelectorAll('[data-dash-open]').forEach(btn => {
+        btn.addEventListener('click', () => openDetailModal(btn.dataset.dashOpen));
+      });
+    }
+
+    // ---------- EVENT WIRING ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      // Nav buttons
+      document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.nav));
+      });
+      document.getElementById('brand-home-btn').addEventListener('click', () => switchView('submit'));
+      document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.getElementById('mobile-nav').classList.toggle('hidden');
+      });
+      document.getElementById('sidebar-kb-btn').addEventListener('click', () => switchView('kb'));
+      document.getElementById('track-new-btn').addEventListener('click', () => switchView('submit'));
+
+      // Hero Quick Track
+      document.getElementById('hero-track-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const val = document.getElementById('hero-track-input').value.trim();
+        if (!val) return;
+        document.getElementById('track-search').value = val;
+        switchView('track');
+        const exact = state.complaints.find(c => c.id.toLowerCase() === val.toLowerCase());
+        if (exact) openDetailModal(exact.id);
+      });
+
+      // Description char counter
+      const descEl = document.getElementById('c-desc');
+      descEl.addEventListener('input', () => {
+        document.getElementById('desc-char-count').textContent = `${descEl.value.length} / 1000`;
+      });
+
+      // Dropzone & File picker
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('c-files');
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('border-brand-500'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-brand-500'));
+      dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('border-brand-500');
+        Array.from(e.dataTransfer.files).forEach(f => state.pendingFiles.push(f.name));
+        renderPendingFiles();
+      });
+      fileInput.addEventListener('change', () => {
+        Array.from(fileInput.files).forEach(f => state.pendingFiles.push(f.name));
+        fileInput.value = '';
+        renderPendingFiles();
+      });
+
+      // Submit Complaint Form
+      document.getElementById('complaint-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const id = `CMP-2026-${Math.floor(2000 + Math.random() * 7999)}`;
+        const email = document.getElementById('c-email').value.trim();
+        const phone = document.getElementById('c-phone').value.trim();
+        const notifyEmail = document.getElementById('c-notify-email').checked;
+        const notifySms = document.getElementById('c-notify-sms').checked;
+
+        const newComplaint = {
+          id,
+          title: document.getElementById('c-title').value.trim(),
+          category: document.getElementById('c-category').value,
+          priority: document.getElementById('c-priority').value,
+          status: 'Submitted',
+          submitterName: state.user ? state.user.name : 'Guest User',
+          submitterEmail: email,
+          submitterPhone: phone,
+          notifyEmail,
+          notifySms,
+          createdAt: nowStamp(),
+          description: document.getElementById('c-desc').value.trim(),
+          documents: [...state.pendingFiles],
+          updates: [
+            {
+              author: 'System',
+              role: 'system',
+              time: nowStamp(),
+              message: `Complaint ${id} registered. Confirmation sent via ${[notifyEmail ? 'Email' : null, notifySms ? 'SMS' : null].filter(Boolean).join(' & ') || 'Portal'}.`
+            }
+          ]
+        };
+
+        state.complaints.unshift(newComplaint);
+        state.pendingFiles = [];
+        renderPendingFiles();
+        e.target.reset();
+        document.getElementById('desc-char-count').textContent = '0 / 1000';
+        logNotification(notifySms ? 'Email & SMS' : 'Email', `New complaint ${id} registered and queued.`);
+        saveState();
+        showToast('Complaint Submitted!', `Tracking ID: ${id}. Opening live tracker...`, 'success');
+        switchView('track');
+        openDetailModal(id);
+      });
+
+      // Track Filters
+      document.getElementById('track-search').addEventListener('input', renderTrackList);
+      document.getElementById('track-status-filter').addEventListener('change', renderTrackList);
+      document.getElementById('track-category-filter').addEventListener('change', renderTrackList);
+
+      // KB Search
+      document.getElementById('kb-search').addEventListener('input', renderKB);
+
+      // Dashboard filter
+      document.getElementById('dash-filter').addEventListener('change', renderDashboard);
+
+      // Detail Modal close & Follow-up
+      document.getElementById('close-detail-modal').addEventListener('click', () => {
+        document.getElementById('detail-modal').classList.add('hidden');
+      });
+      document.getElementById('followup-file').addEventListener('change', e => {
+        const f = e.target.files[0];
+        document.getElementById('followup-file-label').textContent = f ? `Attached: ${f.name}` : 'Attach extra document (optional)';
+      });
+      document.getElementById('followup-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const c = state.complaints.find(x => x.id === state.activeDetailId);
+        if (!c) return;
+        const msg = document.getElementById('followup-text').value.trim();
+        const asTeam = document.getElementById('followup-as-team').checked;
+        const fileEl = document.getElementById('followup-file');
+        const extraFile = fileEl.files[0]?.name;
+
+        if (extraFile) c.documents.push(extraFile);
+        c.updates.push({
+          author: asTeam ? 'Resolution Team' : (state.user ? state.user.name : c.submitterName),
+          role: asTeam ? 'team' : 'user',
+          time: nowStamp(),
+          message: extraFile ? `${msg} (Attached: ${extraFile})` : msg
+        });
+        if (!asTeam && c.status === 'Awaiting Info') {
+          c.status = 'In Progress';
+        }
+        logNotification('Email & SMS', `New update posted on ${c.id}.`);
+        saveState();
+        document.getElementById('followup-text').value = '';
+        fileEl.value = '';
+        document.getElementById('followup-file-label').textContent = 'Attach extra document (optional)';
+        openDetailModal(c.id);
+        if (state.currentView === 'track') renderTrackList();
+        if (state.currentView === 'dashboard') renderDashboard();
+        showToast('Update Posted', `Added message to ${c.id}.`, 'success');
+      });
+
+      // Auth Modal
+      document.getElementById('close-auth-modal').addEventListener('click', () => {
+        document.getElementById('auth-modal').classList.add('hidden');
+      });
+      document.getElementById('auth-tab-login').addEventListener('click', () => openAuthModal('login'));
+      document.getElementById('auth-tab-register').addEventListener('click', () => openAuthModal('register'));
+      document.getElementById('auth-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value.trim();
+        const name = state.authMode === 'register'
+          ? (document.getElementById('auth-name').value.trim() || email.split('@')[0])
+          : email.split('@')[0];
+        const phone = document.getElementById('auth-phone').value.trim();
+        state.user = { name, email, phone, role: 'Citizen User' };
+        saveState();
+        renderAuth();
+        document.getElementById('auth-modal').classList.add('hidden');
+        showToast('Welcome!', `Signed in as ${name}.`, 'success');
+      });
+      document.getElementById('demo-citizen-btn').addEventListener('click', () => {
+        state.user = { name: 'Alex Rivera', email: 'alex.rivera@example.com', phone: '+1 (555) 234-5678', role: 'Citizen User' };
+        saveState();
+        renderAuth();
+        document.getElementById('auth-modal').classList.add('hidden');
+        showToast('Demo Sign-In', 'Signed in as Alex Rivera (Citizen User).', 'success');
+      });
+      document.getElementById('demo-agent-btn').addEventListener('click', () => {
+        state.user = { name: 'Priya Nair', email: 'priya.nair@complainease.org', phone: '+1 (555) 900-4400', role: 'Resolution Team' };
+        saveState();
+        renderAuth();
+        document.getElementById('auth-modal').classList.add('hidden');
+        showToast('Demo Sign-In', 'Signed in as Priya Nair (Resolution Team).', 'success');
+        switchView('dashboard');
+      });
+
+      // Notifications Modal
+      document.getElementById('notif-bell-btn').addEventListener('click', () => {
+        const list = document.getElementById('notif-log-list');
+        list.innerHTML = state.notifications.map(n => `
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span class="font-semibold text-brand-700">${escapeHtml(n.channel)}</span>
+              <span>${escapeHtml(n.time)}</span>
+            </div>
+            <p class="text-xs text-slate-700">${escapeHtml(n.text)}</p>
+          </div>
+        `).join('');
+        document.getElementById('notif-modal').classList.remove('hidden');
+      });
+      document.getElementById('close-notif-modal').addEventListener('click', () => {
+        document.getElementById('notif-modal').classList.add('hidden');
+      });
+
+      renderAuth();
+      switchView('submit');
+    });
+  </script>
+</body>
+</html>
